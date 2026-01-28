@@ -40,29 +40,15 @@ import {
   useMarkAttendance,
   isWithinGeofence,
   TeacherAssignment,
+  useClusterProgramCombinations,
 } from "@/hooks/useAttendance";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClusters } from "@/hooks/useClusters";
 import { usePrograms } from "@/hooks/usePrograms";
-import api from "@/api/api";
 import { useQuery } from "@tanstack/react-query";
 
 interface AttendanceMarkingProps {
   onComplete?: () => void;
-}
-
-// Hook to get cluster-program combinations with enrolled students
-function useClusterProgramCombinations(academicYearId: string | null) {
-  return useQuery({
-    queryKey: ["cluster-program-combinations", academicYearId],
-    queryFn: async () => {
-      if (!academicYearId) return [];
-      
-      const response = await api.get(`/Dashboard/ClusterProgramCombinations?academicYearId=${academicYearId}`);
-      return response.data;
-    },
-    enabled: !!academicYearId,
-  });
 }
 
 export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
@@ -80,9 +66,9 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
-  const { data: teacher } = useCurrentTeacher(user?.id || null);
+  const { data: teacher } = useCurrentTeacher(user? String(user.id) : null);
   const { data: assignments, isLoading: assignmentsLoading } =
-    useTeacherAssignments(user?.id || null);
+    useTeacherAssignments(user? String(user.id) : null);
   const { data: academicYear } = useCurrentAcademicYear();
   const { data: statusTypes } = useAttendanceStatusTypes();
   
@@ -118,7 +104,8 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
   );
 
   const markAttendance = useMarkAttendance();
-
+  const isTeacher = userRole === "teacher";
+  
   // Initialize attendance map with existing records
   useEffect(() => {
     if (existingRecords && statusTypes) {
@@ -231,8 +218,8 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
     onComplete?.();
   };
 
-  const presentStatusId = statusTypes?.find((s) => s.code === "P")?.id;
-  const absentStatusId = statusTypes?.find((s) => s.code === "A")?.id;
+  const presentStatusId = statusTypes?.find((s) => s.code === "P")?.id?.toString();
+  const absentStatusId = statusTypes?.find((s) => s.code === "A")?.id?.toString();
 
   const markedCount = Object.keys(attendanceMap).length;
   const presentCount = Object.values(attendanceMap).filter(
@@ -359,6 +346,8 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                 <Input
                   type="date"
                   value={selectedDate}
+                  readOnly={isTeacher}                  
+                  className={isTeacher ? "opacity-70 cursor-not-allowed" : ""}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   max={new Date().toISOString().split("T")[0]}
                 />
@@ -488,15 +477,19 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => presentStatusId && handleMarkAll(presentStatusId)}
+                className="w-8 h-8 p-0 md:w-auto md:h-auto md:px-3"
               >
-                Mark All Present
+                <span className="hidden md:inline">Mark All Present</span>
+                <span className="md:hidden text-xs font-bold">P</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => absentStatusId && handleMarkAll(absentStatusId)}
+                className="w-8 h-8 p-0 md:w-auto md:h-auto md:px-3"
               >
-                Mark All Absent
+                <span className="hidden md:inline">Mark All Absent</span>
+                <span className="md:hidden text-xs font-bold">A</span>
               </Button>
             </div>
           </CardHeader>
@@ -507,13 +500,14 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
               </div>
             ) : students && students.length > 0 ? (
               <>
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Student</TableHead>
-                        <TableHead className="w-32 text-center">Present</TableHead>
-                        <TableHead className="w-32 text-center">Absent</TableHead>
+                        <TableHead className="text-center">Present</TableHead>
+                        <TableHead className="text-center">Absent</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -555,10 +549,49 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                   </Table>
                 </div>
 
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-2 p-4">
+                  {students.map((student) => (
+                    <div
+                      key={student.id}
+                      className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{student.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {student.student_code || "-"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 ml-3 flex-shrink-0 scale-75 origin-right">
+                        <Checkbox
+                          checked={attendanceMap[student.id] === presentStatusId}
+                          onCheckedChange={(checked) =>
+                            checked &&
+                            presentStatusId &&
+                            handleStatusChange(student.id, presentStatusId)
+                          }
+                          className="data-[state=checked]:bg-success data-[state=checked]:border-success"
+                          title="Present"
+                        />
+                        <Checkbox
+                          checked={attendanceMap[student.id] === absentStatusId}
+                          onCheckedChange={(checked) =>
+                            checked &&
+                            absentStatusId &&
+                            handleStatusChange(student.id, absentStatusId)
+                          }
+                          className="data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
+                          title="Absent"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 {/* Summary & Submit */}
                 <div className="p-4 border-t bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 md:gap-4 text-sm flex-wrap">
                       <Badge variant="success" className="gap-1">
                         <CheckCircle className="h-3 w-3" />
                         {presentCount} Present
@@ -567,14 +600,14 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                         <Users className="h-3 w-3" />
                         {markedCount - presentCount} Absent
                       </Badge>
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground text-xs md:text-sm">
                         {students.length - markedCount} unmarked
                       </span>
                     </div>
                     <Button
                       onClick={handleSubmit}
                       disabled={markedCount === 0 || markAttendance.isPending}
-                      className="gap-2"
+                      className="gap-2 w-full md:w-auto"
                     >
                       {markAttendance.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

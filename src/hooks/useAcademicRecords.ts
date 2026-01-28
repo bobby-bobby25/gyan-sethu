@@ -4,29 +4,29 @@ import { toast } from "sonner";
 
 export interface AcademicRecord {
   id: string;
-  studentId: string;
-  academicYearId: string;
-  clusterId: string;
-  programId: string;
-  classGrade?: string | null;
-  schoolName?: string | null;
-  attendancePercentage?: number | null;
-  resultPercentage?: number | null;
-  yearlyFees?: number | null;
+  student_id: string;
+  academic_year_id: string;
+  cluster_id: string;
+  program_id: string;
+  class_grade?: string | null;
+  school_name?: string | null;
+  attendance_percentage?: number | null;
+  result_percentage?: number | null;
+  yearly_fees?: number | null;
   remarks?: string | null;
-  isActive: boolean;
+  is_active: boolean;
 }
 
 export interface AcademicRecordInsert {
-  studentId: string;
-  clusterId: string;
-  programId: string;
-  academicYearId: string;
-  classGrade?: string | null;
-  schoolName?: string | null;
-  attendancePercentage?: number | null;
-  resultPercentage?: number | null;
-  yearlyFees?: number | null;
+  student_id: string;
+  cluster_id: string;
+  program_id: string;
+  academic_year_id: string;
+  class_grade?: string | null;
+  school_name?: string | null;
+  attendance_percentage?: number | null;
+  result_percentage?: number | null;
+  yearly_fees?: number | null;
   remarks?: string | null;
 }
 
@@ -47,38 +47,35 @@ export function useStudentAcademicRecords(studentId: string | null) {
       const response = await api.get(`/Students/${studentId}/AcademicRecords`);
       const mappedRecords: AcademicRecordWithDetails[] = response.data.map((row: any) => ({
         id: String(row.id),
-        studentId: String(row.studentId),
-        academicYearId: String(row.academicYearId),
-        clusterId: String(row.clusterId),
-        programId: String(row.programId),
+        student_id: String(row.student_id),
+        academic_year_id: String(row.academic_year_id),
+        cluster_id: String(row.cluster_id),
+        program_id: String(row.program_id),
 
-        classGrade: row.classGrade,
-        schoolName: row.schoolName,
-        attendancePercentage: row.attendancePercentage,
-        resultPercentage: row.resultPercentage,
-        yearlyFees: row.yearlyFees,
+        class_grade: row.class_grade,
+        school_name: row.school_name,
+        attendance_percentage: row.attendance_percentage,
+        result_percentage: row.result_percentage,
+        yearly_fees: row.yearly_fees,
         remarks: row.remarks,
-        isActive: row.isActive,
+        is_active: row.is_active,
 
-        clusters: row.clusterId
-          ? { id: String(row.clusterId), name: row.clusterName }
+        clusters: row.cluster_id
+          ? { id: String(row.cluster_id), name: row.cluster_name }
           : null,
 
-        programs: row.programId
-          ? { id: String(row.programId), name: row.programName }
+        programs: row.program_id
+          ? { id: String(row.program_id), name: row.program_name }
           : null,
 
-        academic_years: row.academicYearId
+        academic_years: row.academic_year_id
           ? {
-              id: String(row.academicYearId),
-              name: row.academicYearName,
-              is_current: row.academicYearIsCurrent
+              id: String(row.academic_year_id),
+              name: row.academic_year_name,
+              is_current: row.academic_year_is_current
             }
           : null
       }));
-
-      console.log("Fetched academic records:", mappedRecords);
-
       return mappedRecords;
     },
     enabled: !!studentId,
@@ -108,7 +105,7 @@ export function useCreateAcademicRecord() {
       return response.data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["student_academic_records", variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ["student_academic_records", variables.student_id] });
       queryClient.invalidateQueries({ queryKey: ["students"] });
       toast.success("Academic record created successfully");
     },

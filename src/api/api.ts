@@ -47,8 +47,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       try {
-        const payload = buildRefreshPayload();
-
+        const payload = buildRefreshPayload();        
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/Login/CheckRefreshToken`,
           payload

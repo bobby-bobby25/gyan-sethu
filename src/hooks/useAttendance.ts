@@ -31,7 +31,12 @@ export interface TeacherAssignment {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  clusters?: { id: string; name: string } | null;
+  clusters?: { id: string; 
+               name: string, 
+               latitude:number; 
+               longitude:number; 
+               geo_radius_meters: number 
+               city: string | null} | null;
   programs?: { id: string; name: string } | null;
   academic_years?: { id: string; name: string } | null;
 }
@@ -101,11 +106,68 @@ export const useAttendanceRecords = (
   return useQuery({
     queryKey: ["attendance-records", clusterId, programId, academicYearId, date],
     queryFn: async () => {
-      if (!clusterId || !programId || !academicYearId) return [];
+      if (!clusterId || !programId || !academicYearId || !date) return [];
       const response = await api.get(
-        `/Attendance?clusterId=${clusterId}&programId=${programId}&academicYearId=${academicYearId}&date=${date}`
+        `/Attendance?clusterId=${clusterId}&programId=${programId}&academicYearId=${academicYearId}&fromDate=${date}&toDate=${date}`
       );
-      return response.data as AttendanceRecord[];
+
+      const mappedRecords: AttendanceRecord[] = response.data.map((row: any) => ({
+        id: String(row.attendance_record_id),
+
+        student_id: String(row.student_id),
+        cluster_id: String(row.cluster_id),
+        program_id: String(row.program_id),
+        academic_year_id: String(row.academic_year_id),
+
+        attendance_date: row.attendance_date,
+        status_id: String(row.status_id),
+
+        teacher_id: row.marked_by_teacher_id
+          ? String(row.marked_by_teacher_id)
+          : null,
+
+        marked_at: row.marked_at ?? null,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+
+        students: row.student_id
+          ? {
+              id: String(row.student_id),
+              name: row.student_name
+            }
+          : null,
+
+        clusters: row.cluster_id
+          ? {
+              id: String(row.cluster_id),
+              name: row.cluster_name
+            }
+          : null,
+
+        programs: row.program_id
+          ? {
+              id: String(row.program_id),
+              name: row.program_name
+            }
+          : null,
+
+        attendance_status_types: row.status_id
+          ? {
+              id: String(row.status_id),
+              name: row.status,
+              code: row.status_code?.toUpperCase() ?? null
+            }
+          : null,
+
+        teachers: row.marked_by_teacher_id
+          ? {
+              id: String(row.marked_by_teacher_id),
+              name: row.marked_by_teacher
+            }
+          : null
+      }));
+
+      return mappedRecords;
     },
     enabled: !!clusterId && !!programId && !!academicYearId,
   });
@@ -125,9 +187,68 @@ export const useAllAttendanceRecords = (
       if (clusterId && clusterId !== "all") params.append("clusterId", clusterId);
       if (programId && programId !== "all") params.append("programId", programId);
       if (statusId && statusId !== "all") params.append("statusId", statusId);
-      
+      if (date && date !== null) params.append("fromDate", date);
+      if (date && date !== null) params.append("toDate", date);
+
       const response = await api.get(`/Attendance?${params.toString()}`);
-      return response.data as AttendanceRecord[];
+
+      const mappedRecords: AttendanceRecord[] = response.data.map((row: any) => ({
+        id: String(row.attendance_record_id),
+
+        student_id: String(row.student_id),
+        cluster_id: String(row.cluster_id),
+        program_id: String(row.program_id),
+        academic_year_id: String(row.academic_year_id),
+
+        attendance_date: row.attendance_date,
+        status_id: String(row.status_id),
+
+        teacher_id: row.marked_by_teacher_id
+          ? String(row.marked_by_teacher_id)
+          : null,
+
+        marked_at: row.marked_at ?? null,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+
+        students: row.student_id
+          ? {
+              id: String(row.student_id),
+              name: row.student_name
+            }
+          : null,
+
+        clusters: row.cluster_id
+          ? {
+              id: String(row.cluster_id),
+              name: row.cluster_name
+            }
+          : null,
+
+        programs: row.program_id
+          ? {
+              id: String(row.program_id),
+              name: row.program_name
+            }
+          : null,
+
+        attendance_status_types: row.status_id
+          ? {
+              id: String(row.status_id),
+              name: row.status,
+              code: row.status_code?.toUpperCase() ?? null
+            }
+          : null,
+
+        teachers: row.marked_by_teacher_id
+          ? {
+              id: String(row.marked_by_teacher_id),
+              name: row.marked_by_teacher
+            }
+          : null
+      }));
+
+      return mappedRecords;
     },
   });
 };
@@ -176,7 +297,7 @@ export const useMarkAttendance = () => {
         teacher_id?: string | null;
       }>
     ) => {
-      const response = await api.post("/Attendance/MarkBulk", { records });
+      const response = await api.post("/Attendance/Bulk", { records });
       return response.data;
     },
     onSuccess: () => {
@@ -225,3 +346,19 @@ export const isWithinGeofence = (
   const distance = calculateDistance(userLat, userLon, clusterLat, clusterLon);
   return distance <= radius;
 };
+
+export function useClusterProgramCombinations(academicYearId: string | null) {
+  return useQuery({
+    queryKey: ["cluster-program-combinations", academicYearId],
+    queryFn: async () => {
+      if (!academicYearId) return [];
+
+      const response = await api.get(
+        `/Dashboard/ClusterProgramCombinations`,
+        { params: { academicYearId } }
+      );
+      return response.data;
+    },
+    enabled: !!academicYearId
+  });
+}

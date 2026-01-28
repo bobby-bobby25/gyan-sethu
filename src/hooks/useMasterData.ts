@@ -247,3 +247,187 @@ export const useDeletePaymentMode = () => {
     onError: (error: any) => toast.error("Failed to delete: " + (error?.response?.data?.message || error.message)),
   });
 };
+
+// Ambitions
+export type Ambition = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export const useAmbitions = () => {
+  return useQuery({
+    queryKey: ["ambitions"],
+    queryFn: async () => {
+      const response = await api.get("/MasterData/Ambitions");
+      return response.data as Ambition[];
+    },
+  });
+};
+
+export const useCreateAmbition = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const response = await api.post("/MasterData/Ambitions", { name });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ambitions"] });
+      toast.success("Ambition added");
+    },
+    onError: (error: any) => toast.error("Failed to add: " + error.message),
+  });
+};
+
+export const useUpdateAmbition = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      await api.put(`/MasterData/Ambitions/${id}`, { name });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ambitions"] });
+      toast.success("Ambition updated");
+    },
+    onError: (error: any) => toast.error("Failed to update: " + error.message),
+  });
+};
+
+export const useDeleteAmbition = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/MasterData/Ambitions/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ambitions"] });
+      toast.success("Ambition deleted");
+    },
+    onError: (error: any) => toast.error("Failed to delete: " + error.message),
+  });
+};
+
+// Hobbies
+export type Hobby = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export const useHobbies = () => {
+  return useQuery({
+    queryKey: ["hobbies"],
+    queryFn: async () => {
+      const response = await api.get("/MasterData/Hobbies");
+      return response.data as Hobby[];
+    },
+  });
+};
+
+export const useCreateHobby = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const response = await api.post("/MasterData/Hobbies", { name });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hobbies"] });
+      toast.success("Hobby added");
+    },
+    onError: (error: any) => toast.error("Failed to add: " + error.message),
+  });
+};
+
+export const useUpdateHobby = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      await api.put(`/MasterData/Hobbies/${id}`, { name });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hobbies"] });
+      toast.success("Hobby updated");
+    },
+    onError: (error: any) => toast.error("Failed to update: " + error.message),
+  });
+};
+
+export const useDeleteHobby = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/MasterData/Hobbies/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hobbies"] });
+      toast.success("Hobby deleted");
+    },
+    onError: (error: any) => toast.error("Failed to delete: " + error.message),
+  });
+};
+
+// Cities
+export type City = {
+  id: string;
+  name: string;
+  state: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export const useCities = () => {
+  return useQuery({
+    queryKey: ["cities"],
+    queryFn: async () => {
+      const response = await api.get("/MasterData/Cities");
+      return response.data as City[];
+    },
+  });
+};
+
+export const useCreateCity = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, state }: { name: string; state: string }) => {
+      const response = await api.post("/MasterData/Cities", { name, state });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cities"] });
+      toast.success("City added");
+    },
+    onError: (error: any) => toast.error("Failed to add: " + error.message),
+  });
+};
+
+export const useUpdateCity = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, state }: { id: string; name: string; state: string }) => {
+      await api.put(`/MasterData/Cities/${id}`, { name, state });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cities"] });
+      toast.success("City updated");
+    },
+    onError: (error: any) => toast.error("Failed to update: " + error.message),
+  });
+};
+
+export const useDeleteCity = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/MasterData/Cities/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cities"] });
+      toast.success("City deleted");
+    },
+    onError: (error: any) => toast.error("Failed to delete: " + error.message),
+  });
+};

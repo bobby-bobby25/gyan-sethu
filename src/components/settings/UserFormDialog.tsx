@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUpdateUser, useInviteUser, UserWithRole, AppRole } from "@/hooks/useUsers";
+import { useUpdateUser, useInviteUser, UserWithRole } from "@/hooks/useUsers";
 import { Shield, User, UserCog } from "lucide-react";
+import { AppRole } from "@/contexts/AuthContext";
 
 interface UserFormDialogProps {
   open: boolean;

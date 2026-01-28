@@ -47,6 +47,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ambitions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       attendance_records: {
         Row: {
           academic_year_id: string
@@ -222,6 +243,30 @@ export type Database = {
         }
         Relationships: []
       }
+      cities: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          state: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          state: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          state?: string
+        }
+        Relationships: []
+      }
       clusters: {
         Row: {
           address: string | null
@@ -233,6 +278,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          notes: string | null
           state: string | null
           updated_at: string | null
         }
@@ -246,6 +292,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          notes?: string | null
           state?: string | null
           updated_at?: string | null
         }
@@ -259,6 +306,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          notes?: string | null
           state?: string | null
           updated_at?: string | null
         }
@@ -393,13 +441,16 @@ export type Database = {
           created_at: string | null
           currency: string | null
           date_of_birth: string | null
+          gender: string | null
           id: string
           id_number: string | null
           id_proof_type_id: string | null
           is_active: boolean | null
           name: string
+          notes: string | null
           occupation: string | null
           phone: string | null
+          photo_url: string | null
           relationship: string
           state: string | null
           student_id: string
@@ -414,13 +465,16 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           date_of_birth?: string | null
+          gender?: string | null
           id?: string
           id_number?: string | null
           id_proof_type_id?: string | null
           is_active?: boolean | null
           name: string
+          notes?: string | null
           occupation?: string | null
           phone?: string | null
+          photo_url?: string | null
           relationship: string
           state?: string | null
           student_id: string
@@ -435,13 +489,16 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           date_of_birth?: string | null
+          gender?: string | null
           id?: string
           id_number?: string | null
           id_proof_type_id?: string | null
           is_active?: boolean | null
           name?: string
+          notes?: string | null
           occupation?: string | null
           phone?: string | null
+          photo_url?: string | null
           relationship?: string
           state?: string | null
           student_id?: string
@@ -463,6 +520,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hobbies: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
       }
       id_proof_types: {
         Row: {
@@ -640,51 +718,116 @@ export type Database = {
           },
         ]
       }
+      student_documents: {
+        Row: {
+          created_at: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          is_active: boolean | null
+          name: string
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_documents_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           address: string | null
+          ambition: string | null
           caste_id: string | null
           city: string | null
           created_at: string | null
           date_of_birth: string | null
+          email: string | null
           enrolled_at: string | null
+          gender: string | null
+          hobbies: string[] | null
           id: string
           id_number: string | null
           id_proof_type_id: string | null
           is_active: boolean | null
           name: string
+          notes: string | null
+          phone: string | null
+          photo_url: string | null
           state: string | null
           student_code: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
+          ambition?: string | null
           caste_id?: string | null
           city?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          email?: string | null
           enrolled_at?: string | null
+          gender?: string | null
+          hobbies?: string[] | null
           id?: string
           id_number?: string | null
           id_proof_type_id?: string | null
           is_active?: boolean | null
           name: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
           state?: string | null
           student_code?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
+          ambition?: string | null
           caste_id?: string | null
           city?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          email?: string | null
           enrolled_at?: string | null
+          gender?: string | null
+          hobbies?: string[] | null
           id?: string
           id_number?: string | null
           id_proof_type_id?: string | null
           is_active?: boolean | null
           name?: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
           state?: string | null
           student_code?: string | null
           updated_at?: string | null
@@ -776,13 +919,17 @@ export type Database = {
           address: string | null
           city: string | null
           created_at: string | null
+          date_of_birth: string | null
           email: string | null
+          gender: string | null
           id: string
           id_number: string | null
           id_proof_type_id: string | null
           is_active: boolean | null
           name: string
+          notes: string | null
           phone: string | null
+          photo_url: string | null
           state: string | null
           updated_at: string | null
           user_id: string | null
@@ -791,13 +938,17 @@ export type Database = {
           address?: string | null
           city?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
+          gender?: string | null
           id?: string
           id_number?: string | null
           id_proof_type_id?: string | null
           is_active?: boolean | null
           name: string
+          notes?: string | null
           phone?: string | null
+          photo_url?: string | null
           state?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -806,13 +957,17 @@ export type Database = {
           address?: string | null
           city?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
+          gender?: string | null
           id?: string
           id_number?: string | null
           id_proof_type_id?: string | null
           is_active?: boolean | null
           name?: string
+          notes?: string | null
           phone?: string | null
+          photo_url?: string | null
           state?: string | null
           updated_at?: string | null
           user_id?: string | null

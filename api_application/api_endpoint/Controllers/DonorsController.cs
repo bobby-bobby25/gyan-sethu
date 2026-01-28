@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudenthubAPI.Controllers
 {
@@ -24,6 +25,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get all donors
         /// </summary>
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllDonors([FromQuery] bool isActive = true)
         {
@@ -72,6 +74,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get a specific donor by ID
         /// </summary>
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetDonorById(int id)
         {
@@ -101,6 +104,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Create a new donor
         /// </summary>
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateDonor([FromBody] CreateDonorBO createDonorBO)
         {
@@ -118,7 +122,7 @@ namespace StudenthubAPI.Controllers
 
                 await _dataContext.Database.ExecuteSqlRawAsync(
                     "EXEC sp_InsertDonor @Name, @DateOfBirth, @IDProofTypeID, @IDNumber, @Company, @DonorType, " +
-                    "@Email, @Phone, @Address, @City, @State, @Output OUTPUT",
+                    "@Email, @Phone, @Address, @City, @State, @DonorID OUTPUT, @Output OUTPUT",
                     new SqlParameter("@Name", createDonorBO.Name),
                     new SqlParameter("@DateOfBirth", (object)createDonorBO.DateOfBirth ?? DBNull.Value),
                     new SqlParameter("@IDProofTypeID", (object)createDonorBO.IDProofTypeID ?? DBNull.Value),
@@ -130,14 +134,16 @@ namespace StudenthubAPI.Controllers
                     new SqlParameter("@Address", (object)createDonorBO.Address ?? DBNull.Value),
                     new SqlParameter("@City", (object)createDonorBO.City ?? DBNull.Value),
                     new SqlParameter("@State", (object)createDonorBO.State ?? DBNull.Value),
+                    donorIdParameter,
                     outputParameter);
 
                 var result = outputParameter.Value?.ToString();
+                var donorId = donorIdParameter.Value != DBNull.Value ? (int)donorIdParameter.Value : 0;
 
-                if (result == "Success")
+                if (result == "Success" && donorId > 0)
                 {
-                    return CreatedAtAction(nameof(GetDonorById), new { id = donorIdParameter.Value },
-                        new { message = "Donor created successfully", donorId = donorIdParameter.Value });
+                    return CreatedAtAction(nameof(GetDonorById), new { id = donorId },
+                        new { message = "Donor created successfully", donorId = donorId });
                 }
 
                 return BadRequest(new { message = "Failed to create donor" });
@@ -155,6 +161,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Update an existing donor
         /// </summary>
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateDonor(int id, [FromBody] UpdateDonorBO updateDonorBO)
         {
@@ -204,6 +211,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Delete a donor by ID
         /// </summary>
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDonor(int id)
         {

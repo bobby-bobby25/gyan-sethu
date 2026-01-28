@@ -70,17 +70,12 @@ const Donors = () => {
 
   const filteredDonors = useMemo(() => {
     if (!donors) return [];
-    return donors.filter((donor) => {
-      const name = donor.name ? donor.name.toLowerCase() : "";
-      const donorCode = donor.donorCode ? donor.donorCode.toLowerCase() : "";
-      const email = donor.email ? donor.email.toLowerCase() : "";
-      const query = searchQuery ? searchQuery.toLowerCase() : "";
-      return (
-        name.includes(query) ||
-        donorCode.includes(query) ||
-        email.includes(query)
-      );
-    });
+    return donors.filter(
+      (donor) =>
+        donor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        donor.donor_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        donor.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [donors, searchQuery]);
 
   const stats = useMemo(() => {
@@ -92,7 +87,7 @@ const Donors = () => {
     donors.forEach((donor) => {
       const donations = donor.donations || [];
       totalDonations += donations.reduce((sum, d) => sum + d.amount, 0);
-      const type = donor.donorType || "adhoc";
+      const type = donor.donor_type || "adhoc";
       typeCount[type] = (typeCount[type] || 0) + 1;
     });
 
@@ -141,7 +136,7 @@ const Donors = () => {
     const total = donations.reduce((sum, d) => sum + d.amount, 0);
     const lastDonation = donations.sort(
       (a, b) =>
-        new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()
+        new Date(b.donation_date).getTime() - new Date(a.donation_date).getTime()
     )[0];
     return { total, count: donations.length, lastDonation };
   };
@@ -299,13 +294,13 @@ const Donors = () => {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-24">ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Total Donated</TableHead>
-                      <TableHead className="text-center">Donations</TableHead>
-                      <TableHead>Last Donation</TableHead>
+                    <TableRow className="bg-primary/15 hover:bg-primary/15">
+                      <TableHead className="w-24 font-bold text-foreground">ID</TableHead>
+                      <TableHead className="font-bold text-foreground">Name</TableHead>
+                      <TableHead className="font-bold text-foreground">Type</TableHead>
+                      <TableHead className="text-right font-bold text-foreground">Total Donated</TableHead>
+                      <TableHead className="text-center font-bold text-foreground">Donations</TableHead>
+                      <TableHead className="font-bold text-foreground">Last Donation</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -315,12 +310,12 @@ const Donors = () => {
                       return (
                         <TableRow key={donor.id} className="hover:bg-muted/50">
                           <TableCell className="font-mono text-sm text-muted-foreground">
-                            {donor.donorCode || "-"}
+                            {donor.donor_code || "-"}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                {donor.donorType === "csr" ? (
+                                {donor.donor_type === "csr" ? (
                                   <Building2 className="h-4 w-4 text-muted-foreground" />
                                 ) : (
                                   <User className="h-4 w-4 text-muted-foreground" />
@@ -330,7 +325,7 @@ const Donors = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {getDonorTypeBadge(donor.donorType)}
+                            {getDonorTypeBadge(donor.donor_type)}
                           </TableCell>
                           <TableCell className="text-right font-semibold">
                             {formatCurrency(donorStats.total)}
@@ -342,7 +337,7 @@ const Donors = () => {
                             {donorStats.lastDonation ? (
                               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                {donorStats.lastDonation.donationDate}
+                                {donorStats.lastDonation.donation_date}
                               </div>
                             ) : (
                               <span className="text-muted-foreground">-</span>

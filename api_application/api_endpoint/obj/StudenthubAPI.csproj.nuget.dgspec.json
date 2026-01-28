@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\vinay\\Desktop\\StudenthubAPI\\StudenthubAPI\\StudenthubAPI.csproj": {}
+    "D:\\gyan-sethu\\api_application\\api_endpoint\\StudenthubAPI.csproj": {}
   },
   "projects": {
-    "C:\\Users\\vinay\\Desktop\\StudenthubAPI\\StudenthubAPI\\StudenthubAPI.csproj": {
+    "D:\\gyan-sethu\\api_application\\api_endpoint\\StudenthubAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\vinay\\Desktop\\StudenthubAPI\\StudenthubAPI\\StudenthubAPI.csproj",
+        "projectUniqueName": "D:\\gyan-sethu\\api_application\\api_endpoint\\StudenthubAPI.csproj",
         "projectName": "StudenthubAPI",
-        "projectPath": "C:\\Users\\vinay\\Desktop\\StudenthubAPI\\StudenthubAPI\\StudenthubAPI.csproj",
+        "projectPath": "D:\\gyan-sethu\\api_application\\api_endpoint\\StudenthubAPI.csproj",
         "packagesPath": "C:\\Users\\vinay\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\vinay\\Desktop\\StudenthubAPI\\StudenthubAPI\\obj\\",
+        "outputPath": "D:\\gyan-sethu\\api_application\\api_endpoint\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

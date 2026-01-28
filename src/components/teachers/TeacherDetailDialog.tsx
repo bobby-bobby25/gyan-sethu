@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -32,6 +33,9 @@ import {
   Phone,
   MapPin,
   CreditCard,
+  Calendar,
+  User,
+  FileText,
 } from "lucide-react";
 import {
   TeacherWithAssignments,
@@ -49,6 +53,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { format } from "date-fns";
 
 interface TeacherDetailDialogProps {
   open: boolean;
@@ -93,12 +98,39 @@ export function TeacherDetailDialog({
     }
   };
 
+  // Format date of birth for display
+  const formattedDob = (teacher as any).date_of_birth
+    ? format(new Date((teacher as any).date_of_birth), "dd MMM yyyy")
+    : null;
+
+  // Get location string
+  const locationParts = [
+    (teacher as any).city,
+    (teacher as any).state,
+  ].filter(Boolean);
+  const locationString = locationParts.length > 0 ? locationParts.join(", ") : null;
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl">{teacher.name}</DialogTitle>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={(teacher as any).photo_url || undefined} />
+                <AvatarFallback className="bg-muted text-lg">
+                  {teacher.name?.charAt(0)?.toUpperCase() || "T"}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <DialogTitle className="text-xl">{teacher.name}</DialogTitle>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant={teacher.is_active ? "success" : "secondary"}>
+                    {teacher.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
           </DialogHeader>
 
           <Tabs defaultValue="info" className="mt-4">
@@ -114,6 +146,26 @@ export function TeacherDetailDialog({
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Gender</p>
+                          <p className="font-medium">
+                            {(teacher as any).gender || "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Date of Birth</p>
+                          <p className="font-medium">
+                            {formattedDob || "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+
                       <div className="flex items-center gap-3">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <div>
@@ -145,6 +197,11 @@ export function TeacherDetailDialog({
                           <p className="font-medium">
                             {teacher.address || "Not provided"}
                           </p>
+                          {locationString && (
+                            <p className="text-sm text-muted-foreground">
+                              {locationString}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -160,6 +217,18 @@ export function TeacherDetailDialog({
                           </p>
                         </div>
                       </div>
+
+                      {(teacher as any).notes && (
+                        <div className="flex items-start gap-3">
+                          <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Notes</p>
+                            <p className="font-medium whitespace-pre-wrap">
+                              {(teacher as any).notes}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>

@@ -29,7 +29,20 @@ export const useAcademicYears = () => {
     queryKey: ["academic-years"],
     queryFn: async () => {
       const response = await api.get("/AcademicYears");
-      return response.data as AcademicYear[];
+      const mappedAcademicYears: AcademicYear[] = response.data.map((row: any) => ({
+        id: String(row.id),
+        name: row.name,
+
+        start_date: row.startDate,
+        end_date: row.endDate,
+
+        is_current: row.isCurrent,
+        is_active: row.isActive,
+
+        created_at: row.createdAt,
+        updated_at: row.updatedAt
+      }));
+      return mappedAcademicYears;
     },
   });
 };
@@ -39,7 +52,20 @@ export const useActiveAcademicYears = () => {
     queryKey: ["academic-years-active"],
     queryFn: async () => {
       const response = await api.get("/AcademicYears?isActive=true");
-      return response.data as AcademicYear[];
+      const mappedAcademicYears: AcademicYear[] = response.data.map((row: any) => ({
+        id: String(row.id),
+        name: row.name,
+
+        start_date: row.startDate,
+        end_date: row.endDate,
+
+        is_current: row.isCurrent,
+        is_active: row.isActive,
+
+        created_at: row.createdAt,
+        updated_at: row.updatedAt
+      }));
+      return mappedAcademicYears;
     },
   });
 };

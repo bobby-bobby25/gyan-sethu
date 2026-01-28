@@ -28,7 +28,16 @@ export const useUsers = () => {
     queryFn: async () => {
       try {
         const response = await api.get("/Users");
-        return response.data as UserWithRole[];
+        const mappedUsers: UserWithRole[] = response.data.map((row: any) => ({
+          id: String(row.userID),
+          email: row.email ?? null,
+          full_name: row.fullName ?? null,
+          phone: row.phone ?? null,
+          created_at: row.createdAt,
+          updated_at: row.updatedAt,
+          role: row.role ?? null
+        }));
+        return mappedUsers;
       } catch (error) {
         throw error;
       }

@@ -196,6 +196,65 @@ namespace StudenthubAPI.Models
         public string Name { get; set; }
     }
 
+    public class City
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string State { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class State
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class Ambition
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class Hobby
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    // =============================================
+    // INPUT MODELS FOR MASTER DATA
+    // =============================================
+    public class CityInput
+    {
+        public string name { get; set; }
+        public string state { get; set; }
+    }
+
+    public class StateInput
+    {
+        public string name { get; set; }
+        public string code { get; set; }
+    }
+
+    public class AmbitionInput
+    {
+        public string name { get; set; }
+    }
+
+    public class HobbyInput
+    {
+        public string name { get; set; }
+    }
+
     // =============================================
     // DASHBOARD MODELS
     // =============================================

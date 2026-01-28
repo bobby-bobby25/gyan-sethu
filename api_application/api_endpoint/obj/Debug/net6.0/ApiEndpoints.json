@@ -17,6 +17,75 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.AcademicYearsController",
+    "Method": "Create",
+    "RelativePath": "api/AcademicYears",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "StudenthubAPI.Controllers.CreateAcademicYearBO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.AcademicYearsController",
+    "Method": "Update",
+    "RelativePath": "api/AcademicYears/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "StudenthubAPI.Controllers.UpdateAcademicYearBO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.AcademicYearsController",
+    "Method": "Delete",
+    "RelativePath": "api/AcademicYears/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.AcademicYearsController",
+    "Method": "SetCurrent",
+    "RelativePath": "api/AcademicYears/{id}/SetCurrent",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.AcademicYearsController",
     "Method": "GetCurrent",
     "RelativePath": "api/AcademicYears/Current",
     "HttpMethod": "GET",
@@ -50,6 +119,11 @@
       },
       {
         "Name": "academicYearId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "statusId",
         "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
@@ -91,8 +165,8 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "records",
-        "Type": "System.Collections.Generic.List\u00601[[StudenthubAPI.BO.UpsertAttendanceRecordBO, StudenthubAPI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "Name": "request",
+        "Type": "StudenthubAPI.BO.BulkUpsertAttendanceRequest",
         "IsRequired": true
       }
     ],
@@ -158,6 +232,38 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.ClustersController",
+    "Method": "GetClusterStudents",
+    "RelativePath": "api/Clusters/{clusterId}/Students",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "clusterId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.ClustersController",
+    "Method": "GetClusterTeachers",
+    "RelativePath": "api/Clusters/{clusterId}/Teachers",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "clusterId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.ClustersController",
     "Method": "GetClusterById",
     "RelativePath": "api/Clusters/{id}",
     "HttpMethod": "GET",
@@ -195,12 +301,34 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.ClustersController",
+    "Method": "DeleteCluster",
+    "RelativePath": "api/Clusters/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.ClustersController",
     "Method": "GetClusterStats",
     "RelativePath": "api/Clusters/Stats",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "isActive",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -279,6 +407,73 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.DashboardController",
+    "Method": "GetAttendanceStats",
+    "RelativePath": "api/Dashboard/AttendanceStats",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DashboardController",
+    "Method": "GetClusterPerformance",
+    "RelativePath": "api/Dashboard/ClusterPerformance",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "limit",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DashboardController",
     "Method": "GetClusterProgramCombinations",
     "RelativePath": "api/Dashboard/ClusterProgramCombinations",
     "HttpMethod": "GET",
@@ -287,6 +482,42 @@
     "Parameters": [
       {
         "Name": "academicYearId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DashboardController",
+    "Method": "GetClustersNeedingAttention",
+    "RelativePath": "api/Dashboard/ClustersNeedingAttention",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "poorAttendanceThreshold",
         "Type": "System.Int32",
         "IsRequired": false
       }
@@ -325,6 +556,73 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.DashboardController",
+    "Method": "GetMostAbsentStudents",
+    "RelativePath": "api/Dashboard/MostAbsentStudents",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "limit",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DashboardController",
+    "Method": "GetProgramWiseStudents",
+    "RelativePath": "api/Dashboard/ProgramWiseStudents",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DashboardController",
     "Method": "RecentActivity",
     "RelativePath": "api/Dashboard/RecentActivity",
     "HttpMethod": "GET",
@@ -345,6 +643,68 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.DashboardController",
+    "Method": "GetSummaryStats",
+    "RelativePath": "api/Dashboard/SummaryStats",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DashboardController",
+    "Method": "GetTeachersUnavailable",
+    "RelativePath": "api/Dashboard/TeachersUnavailable",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DashboardController",
     "Method": "UnifiedStats",
     "RelativePath": "api/Dashboard/Unified/Stats",
     "HttpMethod": "GET",
@@ -354,6 +714,250 @@
       {
         "Name": "academicYearId",
         "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "GetDocumentsByReference",
+    "RelativePath": "api/Documents",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "referenceType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "referenceId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "GetDocumentById",
+    "RelativePath": "api/Documents/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "UpdateDocument",
+    "RelativePath": "api/Documents/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateDto",
+        "Type": "StudenthubAPI.BO.DocumentUpdateBO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "DeleteDocument",
+    "RelativePath": "api/Documents/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "DownloadDocument",
+    "RelativePath": "api/Documents/{id}/Download",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "GetDocumentUrl",
+    "RelativePath": "api/Documents/{id}/Url",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "GetDocumentCategories",
+    "RelativePath": "api/Documents/Categories/List",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "SearchDocuments",
+    "RelativePath": "api/Documents/Search",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "searchTerm",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "referenceType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "documentType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "isVerified",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "pageNumber",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "pageSize",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "GetDocumentStats",
+    "RelativePath": "api/Documents/Stats/ByReference",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "referenceType",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.DocumentsController",
+    "Method": "UploadDocument",
+    "RelativePath": "api/Documents/Upload",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ContentType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ContentDisposition",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Headers",
+        "Type": "Microsoft.AspNetCore.Http.IHeaderDictionary",
+        "IsRequired": false
+      },
+      {
+        "Name": "Length",
+        "Type": "System.Int64",
+        "IsRequired": false
+      },
+      {
+        "Name": "Name",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "FileName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "referenceType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "referenceId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "name",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "documentType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "description",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "tags",
+        "Type": "System.String",
         "IsRequired": false
       }
     ],
@@ -544,6 +1148,112 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "StudenthubAPI.Controllers.FamilyMembersController",
+    "Method": "CreateFamilyMember",
+    "RelativePath": "api/FamilyMembers",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "StudenthubAPI.BO.CreateFamilyMemberBO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.FamilyMembersController",
+    "Method": "UpdateFamilyMember",
+    "RelativePath": "api/FamilyMembers/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "StudenthubAPI.BO.UpdateFamilyMemberBO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.FamilyMembersController",
+    "Method": "DeleteFamilyMember",
+    "RelativePath": "api/FamilyMembers/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.FamilyMembersController",
+    "Method": "GetFamilyMember",
+    "RelativePath": "api/FamilyMembers/{id}/FamilyMember",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.FamilyMembersController",
+    "Method": "UpdateFamilyMemberPhoto",
+    "RelativePath": "api/FamilyMembers/{id}/Photo",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "StudenthubAPI.BO.UpdatePhotoRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.FamilyMembersController",
+    "Method": "GetFamilyMembers",
+    "RelativePath": "api/FamilyMembers/{studentId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "studentId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "StudenthubAPI.Controllers.LoginController",
     "Method": "CheckLoginDetails",
     "RelativePath": "api/Login/CheckLoginDetails",
@@ -603,6 +1313,48 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "GetAmbitions",
+    "RelativePath": "api/MasterData/Ambitions",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "CreateAmbition",
+    "RelativePath": "api/MasterData/Ambitions",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "input",
+        "Type": "StudenthubAPI.Models.AmbitionInput",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "DeleteAmbition",
+    "RelativePath": "api/MasterData/Ambitions/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
     "Method": "GetAttendanceStatusTypes",
     "RelativePath": "api/MasterData/AttendanceStatusTypes",
     "HttpMethod": "GET",
@@ -613,6 +1365,38 @@
         "Name": "isActive",
         "Type": "System.Boolean",
         "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "CreateAttendanceStatusType",
+    "RelativePath": "api/MasterData/AttendanceStatusTypes",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "input",
+        "Type": "StudenthubAPI.BO.AttendanceStatusTypeInput",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "DeleteAttendanceStatusType",
+    "RelativePath": "api/MasterData/AttendanceStatusTypes/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
@@ -635,6 +1419,122 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "CreateCasteCategory",
+    "RelativePath": "api/MasterData/CasteCategories",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "input",
+        "Type": "StudenthubAPI.BO.CasteCategoryInput",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "DeleteCasteCategory",
+    "RelativePath": "api/MasterData/CasteCategories/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "GetCities",
+    "RelativePath": "api/MasterData/Cities",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "CreateCity",
+    "RelativePath": "api/MasterData/Cities",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "input",
+        "Type": "StudenthubAPI.Models.CityInput",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "DeleteCity",
+    "RelativePath": "api/MasterData/Cities/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "GetHobbies",
+    "RelativePath": "api/MasterData/Hobbies",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "CreateHobby",
+    "RelativePath": "api/MasterData/Hobbies",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "input",
+        "Type": "StudenthubAPI.Models.HobbyInput",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "DeleteHobby",
+    "RelativePath": "api/MasterData/Hobbies/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
     "Method": "GetIdProofTypes",
     "RelativePath": "api/MasterData/IdProofTypes",
     "HttpMethod": "GET",
@@ -645,6 +1545,38 @@
         "Name": "isActive",
         "Type": "System.Boolean",
         "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "CreateIdProofType",
+    "RelativePath": "api/MasterData/IdProofTypes",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "input",
+        "Type": "StudenthubAPI.BO.IdProofTypeInput",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "DeleteIdProofType",
+    "RelativePath": "api/MasterData/IdProofTypes/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
@@ -663,6 +1595,48 @@
         "IsRequired": false
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "CreatePaymentMode",
+    "RelativePath": "api/MasterData/PaymentModes",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "input",
+        "Type": "StudenthubAPI.BO.PaymentModeInput",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "DeletePaymentMode",
+    "RelativePath": "api/MasterData/PaymentModes/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.MasterDataController",
+    "Method": "GetStates",
+    "RelativePath": "api/MasterData/States",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -736,6 +1710,22 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.ProgramsController",
+    "Method": "DeleteProgram",
+    "RelativePath": "api/Programs/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.ProgramsController",
     "Method": "GetClustersForProgram",
     "RelativePath": "api/Programs/{id}/Clusters",
     "HttpMethod": "GET",
@@ -773,7 +1763,96 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "isActive",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.ReportsController",
+    "Method": "GetAcademicReport",
+    "RelativePath": "api/Reports/Academic",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "academicYearId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.ReportsController",
+    "Method": "GetAttendanceReport",
+    "RelativePath": "api/Reports/Attendance",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "clusterId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "programId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.ReportsController",
+    "Method": "GetDonationsReport",
+    "RelativePath": "api/Reports/Donations",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "donorId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -878,8 +1957,45 @@
   },
   {
     "ContainingType": "StudenthubAPI.Controllers.StudentsController",
+    "Method": "UpdateStudentPhoto",
+    "RelativePath": "api/Students/{id}/Photo",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "StudenthubAPI.BO.UpdatePhotoRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.StudentsController",
     "Method": "GetAcademicRecords",
     "RelativePath": "api/Students/{studentId}/AcademicRecords",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "studentId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.StudentsController",
+    "Method": "GetStudentFamilyMembers",
+    "RelativePath": "api/Students/{studentId}/FamilyMembers",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -1078,6 +2194,27 @@
       {
         "Name": "updateTeacherBO",
         "Type": "StudenthubAPI.BO.UpdateTeacherBO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StudenthubAPI.Controllers.TeachersController",
+    "Method": "UpdateTeacherPhoto",
+    "RelativePath": "api/Teachers/{id}/Photo",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "StudenthubAPI.BO.UpdatePhotoRequest",
         "IsRequired": true
       }
     ],

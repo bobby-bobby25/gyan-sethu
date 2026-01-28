@@ -117,9 +117,49 @@ const Students = () => {
         {/* Mobile title */}
         <h1 className="text-2xl font-display font-bold sm:hidden">Students</h1>
 
-        {/* Action Button */}
-        <div className="flex justify-end">
-          <Button variant="hero" className="gap-2" onClick={handleAddStudent}>
+        {/* Search, Filters and Action Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 flex-1">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or ID..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select value={selectedCluster} onValueChange={setSelectedCluster}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Cluster" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Clusters</SelectItem>
+                {clusters?.map((cluster) => (
+                  <SelectItem key={cluster.id} value={cluster.id}>
+                    {cluster.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Program" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Programs</SelectItem>
+                {programs?.map((program) => (
+                  <SelectItem key={program.id} value={program.id}>
+                    {program.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon">
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button variant="hero" className="gap-2 shrink-0" onClick={handleAddStudent}>
             <Plus className="h-4 w-4" />
             Add Student
           </Button>
@@ -174,95 +214,43 @@ const Students = () => {
           </Card>
         </div>
 
-        {/* Filters & Search */}
-        <Card variant="flat" className="border">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name or student ID..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Select value={selectedCluster} onValueChange={setSelectedCluster}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Cluster" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Clusters</SelectItem>
-                    {clusters?.map((cluster) => (
-                      <SelectItem key={cluster.id} value={cluster.id}>
-                        {cluster.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedProgram} onValueChange={setSelectedProgram}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Programs</SelectItem>
-                    {programs?.map((program) => (
-                      <SelectItem key={program.id} value={program.id}>
-                        {program.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="icon">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Students Table */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Student Records</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center py-12 text-destructive">
-                  Failed to load students. Please try again.
-                </div>
-              ) : students?.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <Users className="h-12 w-12 mb-4 opacity-50" />
-                  <p>No students found</p>
-                  <p className="text-sm">Try adjusting your search or filters</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-28">ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Cluster</TableHead>
-                      <TableHead>Program</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead className="text-center">Attendance</TableHead>
-                      <TableHead className="text-center">Performance</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+        <div className="border rounded-lg overflow-hidden bg-card">
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-12 text-destructive">
+                Failed to load students. Please try again.
+              </div>
+            ) : students?.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Users className="h-12 w-12 mb-4 opacity-50" />
+                <p>No students found</p>
+                <p className="text-sm">Try adjusting your search or filters</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-primary/15 hover:bg-primary/15">
+                    <TableHead className="w-28 font-bold text-foreground">ID</TableHead>
+                    <TableHead className="font-bold text-foreground">Name</TableHead>
+                    <TableHead className="font-bold text-foreground">Cluster</TableHead>
+                    <TableHead className="font-bold text-foreground">Program</TableHead>
+                    <TableHead className="font-bold text-foreground">Class</TableHead>
+                    <TableHead className="text-center font-bold text-foreground">Attendance</TableHead>
+                    <TableHead className="text-center font-bold text-foreground">Performance</TableHead>
+                    <TableHead className="font-bold text-foreground">Status</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                     {students?.map((student) => (
                       <TableRow key={student.id} className="hover:bg-muted/50">
                         <TableCell className="font-mono text-sm text-muted-foreground">
-                            {student.student_code || (student.id ? String(student.id).slice(0, 8) : "—")}
+                          {student.student_code || student.id.slice(0, 8)}
                         </TableCell>
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell>
@@ -355,11 +343,10 @@ const Students = () => {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </Table>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Dialogs */}

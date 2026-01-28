@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudenthubAPI.Controllers
 {
@@ -24,23 +26,26 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get attendance records with optional filters
         /// </summary>
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAttendanceRecords(
             [FromQuery] int? studentId = null,
             [FromQuery] int? clusterId = null,
             [FromQuery] int? programId = null,
             [FromQuery] int? academicYearId = null,
+            [FromQuery] int? statusId = null,
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
             try
             {
                 var records = await _dataContext.Set<AttendanceRecordBO>()
-                    .FromSqlRaw("EXEC sp_GetAttendanceRecords @StudentID, @ClusterID, @ProgramID, @AcademicYearID, @FromDate, @ToDate",
+                    .FromSqlRaw("EXEC sp_GetAttendanceRecords @StudentID, @ClusterID, @ProgramID, @AcademicYearID, @StatusID, @FromDate, @ToDate",
                         new SqlParameter("@StudentID", (object)studentId ?? DBNull.Value),
                         new SqlParameter("@ClusterID", (object)clusterId ?? DBNull.Value),
                         new SqlParameter("@ProgramID", (object)programId ?? DBNull.Value),
                         new SqlParameter("@AcademicYearID", (object)academicYearId ?? DBNull.Value),
+                        new SqlParameter("@StatusID", (object)statusId ?? DBNull.Value),
                         new SqlParameter("@FromDate", (object)fromDate ?? DBNull.Value),
                         new SqlParameter("@ToDate", (object)toDate ?? DBNull.Value))
                     .AsNoTracking()
@@ -57,6 +62,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get students for attendance in a specific cluster/program/academic year
         /// </summary>
+        [Authorize]
         [HttpGet("Students")]
         public async Task<IActionResult> GetStudentsForAttendance(
             [FromQuery] int clusterId,
@@ -69,15 +75,16 @@ namespace StudenthubAPI.Controllers
                     return BadRequest(new { message = "Valid clusterId, programId, and academicYearId are required" });
 
                 // This query fetches students enrolled in the given cluster/program/academic year
-                var students = await _dataContext.Database
-                    .SqlQueryRaw<dynamic>(
-                        "SELECT DISTINCT s.StudentID as id, s.Name as name, s.StudentCode as student_code " +
-                        "FROM Students s " +
-                        "INNER JOIN StudentAcademicRecords sar ON s.StudentID = sar.StudentID " +
-                        "WHERE sar.ClusterID = {0} AND sar.ProgramID = {1} AND sar.AcademicYearID = {2} AND s.IsActive = 1 " +
-                        "ORDER BY s.Name",
-                        clusterId, programId, academicYearId)
-                    .ToListAsync();
+                var students = await  _dataContext.Set<AttendanceStudentsBO>()
+                               .FromSqlRaw("EXEC sp_GetStudentsForAttendance @ClusterID, @ProgramID, @AcademicYearID",
+                                  new SqlParameter("@ClusterID", clusterId),
+                                  new SqlParameter("@ProgramID", programId),
+                                  new SqlParameter("@AcademicYearID", academicYearId))
+                               .AsNoTracking()
+                               .ToListAsync();
+
+                if (students == null)
+                    return NotFound(new { message = "Students not found for user" });
 
                 return Ok(students);
             }
@@ -94,6 +101,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Create or update an attendance record
         /// </summary>
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> UpsertAttendanceRecord([FromBody] UpsertAttendanceRecordBO upsertBO)
         {
@@ -129,13 +137,16 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Bulk upsert attendance records
         /// </summary>
+        [Authorize]
         [HttpPost("Bulk")]
-        public async Task<IActionResult> BulkUpsertAttendanceRecords([FromBody] List<UpsertAttendanceRecordBO> records)
+        public async Task<IActionResult> BulkUpsertAttendanceRecords([FromBody] BulkUpsertAttendanceRequest request)
         {
             try
             {
-                if (records == null || records.Count == 0)
-                    return BadRequest(new { message = "At least one attendance record is required" });
+                if (request.Records == null || !request.Records.Any())
+                    return BadRequest(new { message = "Records are required" });
+
+                var records = request.Records;
 
                 int successCount = 0;
                 int errorCount = 0;

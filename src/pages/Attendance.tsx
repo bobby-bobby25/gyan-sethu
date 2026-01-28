@@ -63,6 +63,7 @@ const Attendance = () => {
   const { data: clusters } = useClusters();
   const { data: programs } = usePrograms();
   const { data: statusTypes } = useAttendanceStatusTypes();
+  const isTeacher = userRole === "teacher";
 
   const stats = useMemo(() => {
     if (!records) return { present: 0, absent: 0, total: 0, rate: 0 };
@@ -107,14 +108,30 @@ const Attendance = () => {
               <CalendarCheck className="h-4 w-4" />
               Mark Attendance
             </TabsTrigger>
-            <TabsTrigger value="view" className="gap-2">
+            {/* <TabsTrigger value="view" className="gap-2">
               <List className="h-4 w-4" />
               View Records
             </TabsTrigger>
             <TabsTrigger value="reports" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               Reports
-            </TabsTrigger>
+            </TabsTrigger> */}
+
+            {!isTeacher && (
+              <TabsTrigger value="view" className="gap-2">
+                <List className="h-4 w-4" />
+                View Records
+              </TabsTrigger>
+            )}
+
+            {!isTeacher && (
+              <TabsTrigger value="reports" className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Reports
+              </TabsTrigger>
+            )}
+
+
           </TabsList>
 
           {/* Mark Attendance Tab */}
@@ -123,6 +140,7 @@ const Attendance = () => {
           </TabsContent>
 
           {/* View Records Tab */}
+          {!isTeacher && (
           <TabsContent value="view" className="mt-6 space-y-6">
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -285,7 +303,7 @@ const Attendance = () => {
                                   {record.students?.name || "-"}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {record.students?.student_code || "-"}
+                                  {record.students?.id || "-"}
                                 </p>
                               </div>
                             </TableCell>
@@ -332,11 +350,14 @@ const Attendance = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Reports Tab */}
+          {!isTeacher && (
           <TabsContent value="reports" className="mt-6">
             <AttendanceReports />
           </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>

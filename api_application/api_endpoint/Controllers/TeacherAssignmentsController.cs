@@ -7,6 +7,7 @@ using StudenthubAPI.BO;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudenthubAPI.Controllers
 {
@@ -20,6 +21,7 @@ namespace StudenthubAPI.Controllers
             _context = context;
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] TeacherAssignmentBO assignment)
         {
@@ -40,6 +42,7 @@ namespace StudenthubAPI.Controllers
             return BadRequest(new { message = "Failed to create teacher assignment" });
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] TeacherAssignmentBO assignment)
         {
@@ -61,6 +64,7 @@ namespace StudenthubAPI.Controllers
             return BadRequest(new { message = "Failed to update teacher assignment" });
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

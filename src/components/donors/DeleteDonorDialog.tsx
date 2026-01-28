@@ -25,7 +25,7 @@ export function DeleteDonorDialog({
 
   const handleDelete = async () => {
     if (donor) {
-      await deleteDonor.mutateAsync(donor.id);
+      await deleteDonor.mutateAsync(String(donor.id));
       onOpenChange(false);
     }
   };

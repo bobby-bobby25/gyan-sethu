@@ -32,14 +32,14 @@ import { useCreateAcademicRecord, useUpdateAcademicRecord, type AcademicRecordWi
 import { Loader2 } from "lucide-react";
 
 const academicRecordSchema = z.object({
-  academicYearId: z.string().min(1, "Academic year is required"),
-  clusterId: z.string().min(1, "Cluster is required"),
-  programId: z.string().min(1, "Program is required"),
-  classGrade: z.string().max(20, "Class must be less than 20 characters").optional(),
-  schoolName: z.string().max(200, "School name must be less than 200 characters").optional(),
-  attendancePercentage: z.coerce.number().min(0).max(100).optional().nullable(),
-  resultPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
-  yearlyFees: z.coerce.number().min(0).optional().nullable(),
+  academic_year_id: z.string().min(1, "Academic year is required"),
+  cluster_id: z.string().min(1, "Cluster is required"),
+  program_id: z.string().min(1, "Program is required"),
+  class_grade: z.string().max(20, "Class must be less than 20 characters").optional(),
+  school_name: z.string().max(200, "School name must be less than 200 characters").optional(),
+  attendance_percentage: z.coerce.number().min(0).max(100).optional().nullable(),
+  result_percentage: z.coerce.number().min(0).max(100).optional().nullable(),
+  yearly_fees: z.coerce.number().min(0).optional().nullable(),
   remarks: z.string().max(500, "Remarks must be less than 500 characters").optional(),
 });
 
@@ -70,14 +70,14 @@ export function AcademicRecordFormDialog({
   const form = useForm<AcademicRecordFormData>({
     resolver: zodResolver(academicRecordSchema),
     defaultValues: {
-      academicYearId: "",
-      clusterId: "",
-      programId: "",
-      classGrade: "",
-      schoolName: "",
-      attendancePercentage: null,
-      resultPercentage: null,
-      yearlyFees: null,
+      academic_year_id: "",
+      cluster_id: "",
+      program_id: "",
+      class_grade: "",
+      school_name: "",
+      attendance_percentage: null,
+      result_percentage: null,
+      yearly_fees: null,
       remarks: "",
     },
   });
@@ -85,28 +85,28 @@ export function AcademicRecordFormDialog({
   useEffect(() => {
     if (record) {
       form.reset({
-        academicYearId: record.academicYearId || "",
-        clusterId: record.clusterId || "",
-        programId: record.programId || "",
-        classGrade: record.classGrade || "",
-        schoolName: record.schoolName || "",
-        attendancePercentage: record.attendancePercentage,
-        resultPercentage: record.resultPercentage,
-        yearlyFees: record.yearlyFees,
+        academic_year_id: record.academic_year_id || "",
+        cluster_id: record.cluster_id || "",
+        program_id: record.program_id || "",
+        class_grade: record.class_grade || "",
+        school_name: record.school_name || "",
+        attendance_percentage: record.attendance_percentage,
+        result_percentage: record.result_percentage,
+        yearly_fees: record.yearly_fees,
         remarks: record.remarks || "",
       });
     } else {
       // Default to current academic year
       const currentYear = academicYears?.find(y => y.is_current);
       form.reset({
-        academicYearId: currentYear?.id || "",
-        clusterId: "",
-        programId: "",
-        classGrade: "",
-        schoolName: "",
-        attendancePercentage: null,
-        resultPercentage: null,
-        yearlyFees: null,
+        academic_year_id: currentYear?.id || "",
+        cluster_id: "",
+        program_id: "",
+        class_grade: "",
+        school_name: "",
+        attendance_percentage: null,
+        result_percentage: null,
+        yearly_fees: null,
         remarks: "",
       });
     }
@@ -114,17 +114,16 @@ export function AcademicRecordFormDialog({
 
   const onSubmit = async (data: AcademicRecordFormData) => {
     const payload = {
-      studentId: studentId,
-      academicYearId: data.academicYearId,
-      clusterId: data.clusterId,
-      programId: data.programId,
-      classGrade: data.classGrade || null,
-      schoolName: data.schoolName || null,
-      attendancePercentage: data.attendancePercentage ?? null,
-      resultPercentage: data.resultPercentage ?? null,
-      yearlyFees: data.yearlyFees ?? null,
+      student_id: studentId,
+      academic_year_id: data.academic_year_id,
+      cluster_id: data.cluster_id,
+      program_id: data.program_id,
+      class_grade: data.class_grade || null,
+      school_name: data.school_name || null,
+      attendance_percentage: data.attendance_percentage ?? null,
+      result_percentage: data.result_percentage ?? null,
+      yearly_fees: data.yearly_fees ?? null,
       remarks: data.remarks || null,
-      isActive:true,
     };
 
     if (isEditing && record) {
@@ -155,7 +154,7 @@ export function AcademicRecordFormDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="academicYearId"
+              name="academic_year_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Academic Year *</FormLabel>
@@ -181,7 +180,7 @@ export function AcademicRecordFormDialog({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="clusterId"
+                name="cluster_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cluster *</FormLabel>
@@ -206,7 +205,7 @@ export function AcademicRecordFormDialog({
 
               <FormField
                 control={form.control}
-                name="programId"
+                name="program_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Program *</FormLabel>
@@ -233,7 +232,7 @@ export function AcademicRecordFormDialog({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="classGrade"
+                name="class_grade"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Class/Grade</FormLabel>
@@ -247,7 +246,7 @@ export function AcademicRecordFormDialog({
 
               <FormField
                 control={form.control}
-                name="schoolName"
+                name="school_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>School Name</FormLabel>
@@ -263,7 +262,7 @@ export function AcademicRecordFormDialog({
             <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="attendancePercentage"
+                name="attendance_percentage"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Attendance %</FormLabel>
@@ -286,7 +285,7 @@ export function AcademicRecordFormDialog({
 
               <FormField
                 control={form.control}
-                name="resultPercentage"
+                name="result_percentage"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Result %</FormLabel>
@@ -309,7 +308,7 @@ export function AcademicRecordFormDialog({
 
               <FormField
                 control={form.control}
-                name="yearlyFees"
+                name="yearly_fees"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Yearly Fees (₹)</FormLabel>

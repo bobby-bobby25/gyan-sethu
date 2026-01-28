@@ -3,7 +3,7 @@
 -- SQL Server Migration for StudentHub Application
 -- =============================================
 
-USE [P2_PROD_IGB_Replica]
+USE [gyansethu]
 GO
 
 -- =============================================
@@ -94,16 +94,18 @@ GO
 -- =============================================
 -- REFRESH TOKENS TABLE
 -- =============================================
-CREATE TABLE [dbo].[RefreshTokens] (
-    [RefreshTokenID] INT IDENTITY(1,1) PRIMARY KEY,
-    [UserID] INT NOT NULL,
-    [RefreshToken] NVARCHAR(500) NOT NULL,
-    [RefreshExpiry] DATETIME2 NOT NULL,
-    [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    [IsRevoked] BIT NOT NULL DEFAULT 0,
-    CONSTRAINT FK_RefreshTokens_Users FOREIGN KEY ([UserID]) REFERENCES [dbo].[Users]([UserID]) ON DELETE CASCADE
-);
-GO
+IF NOT EXISTS(SELECT * FROM SYS.tables WHERE name = 'Mbl_CMN_RefreshTokenDtls')
+BEGIN
+	CREATE TABLE Mbl_CMN_RefreshTokenDtls
+	(
+		Id INT IDENTITY PRIMARY KEY,
+		UserId INT NOT NULL,
+		Token NVARCHAR(200) NOT NULL,
+		Expires DATETIME NOT NULL,
+		Created DATETIME NOT NULL DEFAULT GETDATE(),
+		Revoked DATETIME NULL
+	 )
+END
 
 -- =============================================
 -- INDEXES FOR PERFORMANCE
@@ -111,8 +113,8 @@ GO
 CREATE NONCLUSTERED INDEX IX_Users_Email ON [dbo].[Users]([Email]);
 CREATE NONCLUSTERED INDEX IX_UserRoles_UserID ON [dbo].[UserRoles]([UserID]);
 CREATE NONCLUSTERED INDEX IX_UserRoles_RoleID ON [dbo].[UserRoles]([RoleID]);
-CREATE NONCLUSTERED INDEX IX_RefreshTokens_UserID ON [dbo].[RefreshTokens]([UserID]);
-CREATE NONCLUSTERED INDEX IX_RefreshTokens_Token ON [dbo].[RefreshTokens]([RefreshToken]);
+--CREATE NONCLUSTERED INDEX IX_RefreshTokens_UserID ON [dbo].[RefreshTokens]([UserID]);
+--CREATE NONCLUSTERED INDEX IX_RefreshTokens_Token ON [dbo].[RefreshTokens]([RefreshToken]);
 GO
 
 -- =============================================
@@ -131,136 +133,6 @@ BEGIN
 END;
 GO
 
--- =============================================
--- STORED PROCEDURES
--- =============================================
-
--- Get Login Details (used by LoginController)
-CREATE OR ALTER PROCEDURE [dbo].[spCMNStudentHub_GetLoginDetails]
-    @Email NVARCHAR(255)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT 
-        u.[UserID],
-        u.[FullName],
-        u.[Email],
-        u.[PasswordHash],
-        r.[RoleName] AS [Role]
-    FROM [dbo].[Users] u
-    INNER JOIN [dbo].[UserRoles] ur ON u.[UserID] = ur.[UserID]
-    INNER JOIN [dbo].[Roles] r ON ur.[RoleID] = r.[RoleID]
-    WHERE u.[Email] = @Email 
-        AND u.[IsActive] = 1;
-END;
-GO
-
--- Register User
-CREATE OR ALTER PROCEDURE [dbo].[spCMNStudentHub_RegisterUser]
-    @Email NVARCHAR(255),
-    @PasswordHash NVARCHAR(500),
-    @RoleId INT,
-    @FullName NVARCHAR(255),
-    @Output NVARCHAR(50) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    BEGIN TRY
-        BEGIN TRANSACTION;
-        
-        -- Check if user already exists
-        IF EXISTS (SELECT 1 FROM [dbo].[Users] WHERE [Email] = @Email)
-        BEGIN
-            SET @Output = 'UserExists';
-            ROLLBACK TRANSACTION;
-            RETURN;
-        END
-        
-        -- Insert user
-        DECLARE @NewUserID INT;
-        
-        INSERT INTO [dbo].[Users] ([Email], [PasswordHash], [FullName])
-        VALUES (@Email, @PasswordHash, @FullName);
-        
-        SET @NewUserID = SCOPE_IDENTITY();
-        
-        -- Assign role (default to teacher if not specified)
-        IF @RoleId IS NULL OR @RoleId = 0
-        BEGIN
-            SELECT @RoleId = [RoleID] FROM [dbo].[Roles] WHERE [RoleName] = 'teacher';
-        END
-        
-        INSERT INTO [dbo].[UserRoles] ([UserID], [RoleID])
-        VALUES (@NewUserID, @RoleId);
-        
-        SET @Output = 'Success';
-        
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-            
-        SET @Output = 'Error';
-        THROW;
-    END CATCH
-END;
-GO
-
--- Check/Add Refresh Token
-CREATE OR ALTER PROCEDURE [dbo].[spMbl_CMN_CheckAddRefreshToken]
-    @RefreshToken NVARCHAR(500),
-    @LoginID INT,
-    @RefreshExpiry DATETIME2,
-    @Type NVARCHAR(10), -- 'Add' or 'Check'
-    @Output NVARCHAR(255) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    IF @Type = 'Check'
-    BEGIN
-        -- Check if refresh token is valid
-        IF EXISTS (
-            SELECT 1 
-            FROM [dbo].[RefreshTokens] 
-            WHERE [RefreshToken] = @RefreshToken 
-                AND [UserID] = @LoginID
-                AND [RefreshExpiry] > GETUTCDATE()
-                AND [IsRevoked] = 0
-        )
-        BEGIN
-            SET @Output = 'Token_Valid';
-        END
-        ELSE
-        BEGIN
-            SET @Output = 'Token_Invalid';
-        END
-    END
-    ELSE IF @Type = 'Add'
-    BEGIN
-        -- Add or update refresh token
-        IF EXISTS (SELECT 1 FROM [dbo].[RefreshTokens] WHERE [UserID] = @LoginID AND [IsRevoked] = 0)
-        BEGIN
-            -- Update existing token
-            UPDATE [dbo].[RefreshTokens]
-            SET [RefreshToken] = @RefreshToken,
-                [RefreshExpiry] = @RefreshExpiry
-            WHERE [UserID] = @LoginID AND [IsRevoked] = 0;
-        END
-        ELSE
-        BEGIN
-            -- Insert new token
-            INSERT INTO [dbo].[RefreshTokens] ([UserID], [RefreshToken], [RefreshExpiry])
-            VALUES (@LoginID, @RefreshToken, @RefreshExpiry);
-        END
-        
-        SET @Output = 'Token_Added';
-    END
-END;
-GO
 
 -- Helper function to check user role
 CREATE OR ALTER FUNCTION [dbo].[fn_HasRole]

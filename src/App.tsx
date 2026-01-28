@@ -15,6 +15,8 @@ import Attendance from "./pages/Attendance";
 import Donors from "./pages/Donors";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import TeacherLogin from "./pages/TeacherLogin";
+import TeacherApp from "./pages/TeacherApp";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,16 @@ const App = () => (
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
             
+            {/* Teacher Mobile App Routes */}
+            {/* <Route path="/teacher-login" element={<TeacherLogin />} />
+            <Route
+              path="/teacher-app"
+              element={
+                <ProtectedRoute allowedRoles={["teacher"]}>
+                  <TeacherApp />
+                </ProtectedRoute>
+              }
+            /> */}
             {/* Protected routes - Admin and Management only */}
             <Route
               path="/dashboard"

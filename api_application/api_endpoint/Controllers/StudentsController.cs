@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudenthubAPI.Controllers
 {
@@ -24,6 +26,8 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get all students with optional filters
         /// </summary>
+
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllStudents(
             string? search = null,
@@ -53,6 +57,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get a specific student by ID
         /// </summary>
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetStudentById(int id)
         {
@@ -75,6 +80,44 @@ namespace StudenthubAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Get family members for a specific student
+        /// </summary>
+        [Authorize]
+        [HttpGet("{studentId}/FamilyMembers")]
+        public async Task<IActionResult> GetStudentFamilyMembers(int studentId)
+        {
+            try
+            {
+                var familyMembers = await _dataContext.Database.SqlQueryRaw<dynamic>(
+                    "SELECT FamilyMemberID as id, StudentID as student_id, Name as name, " +
+                    "Relationship as relationship, Phone as phone, IDProofTypeID as id_proof_type_id, " +
+                    "IDNumber as id_number, DateOfBirth as date_of_birth, Occupation as occupation, " +
+                    "AnnualIncome as annual_income, Address as address, City as city, State as state, " +
+                    "BankName as bank_name, BankAccountNumber as bank_account_number, " +
+                    "IsActive as is_active FROM dbo.FamilyMembers WHERE StudentID = @StudentID AND IsActive = 1",
+                    new SqlParameter("@StudentID", studentId))
+                .ToListAsync();
+
+                return Ok(familyMembers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while retrieving family members", error = ex.Message });
+            }
+        }
+
+        private string NormalizeHobbies(object hobbies)
+        {
+            if (hobbies is string[] arr)
+                return string.Join(", ", arr);
+
+            if (hobbies is string str)
+                return str;
+
+            return null;
+        }
+
         #endregion
 
         #region Create Operation
@@ -82,6 +125,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Create a new student
         /// </summary>
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateStudent([FromBody] CreateStudentBO createStudentBO)
         {
@@ -98,24 +142,32 @@ namespace StudenthubAPI.Controllers
                 };
 
                 await _dataContext.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_InsertStudent @Name, @DateOfBirth, @IDProofTypeID, @IDNumber, " +
-                    "@Address, @City, @State, @CasteID, @Output OUTPUT",
+                    "EXEC sp_InsertStudent @Name, @DateOfBirth, @Gender, @Email, @Phone, @Ambition, @Hobbies, @Notes, @IDProofTypeID, @IDNumber, " +
+                    "@Address, @City, @State, @CasteID, @StudentID OUTPUT, @Output OUTPUT",
                     new SqlParameter("@Name", createStudentBO.Name),
                     new SqlParameter("@DateOfBirth", (object)createStudentBO.DateOfBirth ?? DBNull.Value),
+                    new SqlParameter("@Gender", (object)createStudentBO.Gender ?? DBNull.Value),
+                    new SqlParameter("@Email", (object)createStudentBO.Email ?? DBNull.Value),
+                    new SqlParameter("@Phone", (object)createStudentBO.Phone ?? DBNull.Value),
+                    new SqlParameter("@Ambition", (object)createStudentBO.Ambition ?? DBNull.Value),
+                    new SqlParameter("@Hobbies", (object)NormalizeHobbies(createStudentBO.Hobbies) ?? DBNull.Value),
+                    new SqlParameter("@Notes", (object)createStudentBO.Notes ?? DBNull.Value),
                     new SqlParameter("@IDProofTypeID", (object)createStudentBO.IDProofTypeID ?? DBNull.Value),
                     new SqlParameter("@IDNumber", (object)createStudentBO.IDNumber ?? DBNull.Value),
                     new SqlParameter("@Address", (object)createStudentBO.Address ?? DBNull.Value),
                     new SqlParameter("@City", (object)createStudentBO.City ?? DBNull.Value),
                     new SqlParameter("@State", (object)createStudentBO.State ?? DBNull.Value),
                     new SqlParameter("@CasteID", (object)createStudentBO.CasteID ?? DBNull.Value),
+                    studentIdParameter,
                     outputParameter);
 
                 var result = outputParameter.Value?.ToString();
+                var studentId = studentIdParameter.Value != DBNull.Value ? (int)studentIdParameter.Value : 0;
 
-                if (result == "Success")
+                if (result == "Success" && studentId > 0)
                 {
-                    return CreatedAtAction(nameof(GetStudentById), new { id = studentIdParameter.Value }, 
-                        new { message = "Student created successfully", studentId = studentIdParameter.Value });
+                    return CreatedAtAction(nameof(GetStudentById), new { id = studentId }, 
+                        new { message = "Student created successfully", studentId = studentId });
                 }
 
                 return BadRequest(new { message = "Failed to create student" });
@@ -125,6 +177,21 @@ namespace StudenthubAPI.Controllers
                 return StatusCode(500, new { message = "An error occurred while creating student", error = ex.Message });
             }
         }
+        #endregion
+
+        #region Put Operation
+        [Authorize]
+        [HttpPut("{id}/Photo")]
+        public async Task<IActionResult> UpdateStudentPhoto(int id, [FromBody] UpdatePhotoRequest request)
+        {
+            await _dataContext.Database.ExecuteSqlRawAsync(
+                "UPDATE Students SET PhotoDocumentId = @DocumentID WHERE StudentID = @StudentID",
+                new SqlParameter("@DocumentID", request.DocumentId),
+                new SqlParameter("@StudentID", id)
+            );
+
+            return Ok(new { message = "Student photo updated" });
+        }
 
         #endregion
 
@@ -133,6 +200,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Update an existing student
         /// </summary>
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateStudent(int id, [FromBody] UpdateStudentBO updateStudentBO)
         {
@@ -144,11 +212,17 @@ namespace StudenthubAPI.Controllers
                 };
 
                 await _dataContext.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_UpdateStudent @StudentID, @Name, @DateOfBirth, @IDProofTypeID, @IDNumber, " +
+                    "EXEC sp_UpdateStudent @StudentID,@Name, @DateOfBirth, @Gender, @Email, @Phone, @Ambition, @Hobbies, @Notes, @IDProofTypeID, @IDNumber, " +
                     "@Address, @City, @State, @CasteID, @Output OUTPUT",
                     new SqlParameter("@StudentID", id),
                     new SqlParameter("@Name", (object)updateStudentBO.Name ?? DBNull.Value),
                     new SqlParameter("@DateOfBirth", (object)updateStudentBO.DateOfBirth ?? DBNull.Value),
+                    new SqlParameter("@Gender", (object)updateStudentBO.Gender ?? DBNull.Value),
+                    new SqlParameter("@Email", (object)updateStudentBO.Email ?? DBNull.Value),
+                    new SqlParameter("@Phone", (object)updateStudentBO.Phone ?? DBNull.Value),
+                    new SqlParameter("@Ambition", (object)updateStudentBO.Ambition ?? DBNull.Value),
+                    new SqlParameter("@Hobbies", (object)NormalizeHobbies(updateStudentBO.Hobbies) ?? DBNull.Value),
+                    new SqlParameter("@Notes", (object)updateStudentBO.Notes ?? DBNull.Value),
                     new SqlParameter("@IDProofTypeID", (object)updateStudentBO.IDProofTypeID ?? DBNull.Value),
                     new SqlParameter("@IDNumber", (object)updateStudentBO.IDNumber ?? DBNull.Value),
                     new SqlParameter("@Address", (object)updateStudentBO.Address ?? DBNull.Value),
@@ -179,6 +253,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Delete a student (soft delete)
         /// </summary>
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteStudent(int id)
         {
@@ -212,7 +287,7 @@ namespace StudenthubAPI.Controllers
         #endregion
 
         #region Academic Records
-
+        [Authorize]
         [HttpGet("{studentId}/AcademicRecords")]
         public async Task<IActionResult> GetAcademicRecords(int studentId)
         {
@@ -238,6 +313,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Create a new academic record for a student
         /// </summary>
+        [Authorize]
         [HttpPost("AcademicRecords")]
         public async Task<IActionResult> CreateAcademicRecord([FromBody] CreateAcademicRecordBO model)
         {
@@ -279,6 +355,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Update an existing academic record for a student
         /// </summary>
+        [Authorize]
         [HttpPut("AcademicRecords/{id}")]
         public async Task<IActionResult> UpdateAcademicRecord(int id, [FromBody] UpdateAcademicRecordBO model)
         {
@@ -318,6 +395,7 @@ namespace StudenthubAPI.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete("AcademicRecords/{id}")]
         public async Task<IActionResult> DeleteStudentAcademicRecord(int id)
         {
@@ -349,5 +427,6 @@ namespace StudenthubAPI.Controllers
         }
 
         #endregion
+
     }
 }

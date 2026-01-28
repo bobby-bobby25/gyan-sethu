@@ -5,8 +5,8 @@ import { toast } from "sonner";
 export interface Donor {
   id: number;
   name: string;
-  donorCode: string;
-  donorType: string | null;
+  donor_code: string;
+  donor_type: string | null;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -24,12 +24,12 @@ export interface Donor {
 
 export interface Donation {
   id: string;
-  donorId: number;
+  donor_id: string;
   amount: number;
-  donationDate: string;
-  paymentModeID: string | null;
+  donation_date: string;
+  payment_mode_id: string | null;
   notes?: string | null;
-  referenceNumber?: string | null;
+  reference_number?: string | null;
   currency?: string | null;
   remarks?: string | null;
   is_active: boolean;
@@ -42,6 +42,18 @@ export interface DonorWithDonations extends Donor {
   donations?: Donation[];
 }
 
+export const formatDate = (value?: string | null) => {
+  if (!value) return "Not provided";
+
+  const date = new Date(value);
+
+  if (isNaN(date.getTime())) {
+    return "Not provided";
+  }
+
+  return date.toLocaleDateString("en-IN");
+};
+
 export const useDonors = () => {
   return useQuery({
     queryKey: ["donors"],
@@ -50,12 +62,12 @@ export const useDonors = () => {
       // Map donorID to id for frontend compatibility
       const donors = (response.data as any[]).map((donor) => ({
         id: donor.DonorID ?? donor.id,
-        donorCode: donor.DonorCode ?? "",
+        donor_code: donor.DonorCode ?? "",
         name: donor.Name ?? "",
-        donorType: donor.DonorType ?? null,
+        donor_type: donor.DonorType ?? null,
         email: donor.Email ?? null,
         company: donor.Company ?? null,
-        date_of_birth: donor.DateOfBirth ?? null,
+        date_of_birth: formatDate(donor.DateOfBirth) ?? null,
         phone: donor.Phone ?? null,
         address: donor.Address ?? null,
         city: donor.City ?? null,
@@ -69,12 +81,12 @@ export const useDonors = () => {
         donations: Array.isArray(donor.donations)
           ? donor.donations.map((donation) => ({
               id: donation.DonationId ?? donation.id,
-              donorId: donation.DonorId ?? donation.donorId,
+              donor_id: donation.DonorId ?? donation.donorId,
               amount: donation.Amount ?? 0,
-              donationDate: donation.DonationDate ?? "",
-              paymentModeID: donation.PaymentModeID ? String(donation.PaymentModeID) : null,
+              donation_date: donation.DonationDate ?? "",
+              payment_mode_id: donation.PaymentModeID ? String(donation.PaymentModeID) : null,
               notes: donation.Notes ?? null,
-              referenceNumber: donation.ReferenceNumber ?? null,
+              reference_number: donation.ReferenceNumber ?? null,
               currency: donation.Currency ?? null,
               remarks: donation.Remarks ?? null,
               is_active: donation.IsActive ?? true,
@@ -105,7 +117,7 @@ export const useCreateDonor = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (donor: Omit<Donor, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'id_proof_types'>) => {
+    mutationFn: async (donor: Omit<Donor, 'id' | 'created_at' | 'updated_at' | 'is_active' | 'id_proof_types' | 'donor_code'>) => {
       const response = await api.post("/Donors", donor);
       return response.data;
     },

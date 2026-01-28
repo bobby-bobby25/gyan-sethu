@@ -104,6 +104,13 @@ const ClusterDetailDialog = ({
             </div>
           )}
 
+          {(cluster as any).notes && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="text-xs text-muted-foreground">Notes</div>
+              <div className="mt-1 text-sm">{(cluster as any).notes}</div>
+            </div>
+          )}
+
           {/* Teachers & Students Tabs */}
           <Tabs defaultValue="teachers" className="w-full">
             <TabsList className="grid w-full grid-cols-2">

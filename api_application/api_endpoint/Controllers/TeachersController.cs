@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudenthubAPI.Controllers
 {
@@ -24,6 +25,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get all teachers
         /// </summary>
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllTeachers([FromQuery] bool isActive = true)
         {
@@ -46,6 +48,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get a specific teacher by ID
         /// </summary>
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTeacherById(int id)
         {
@@ -71,20 +74,18 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get teacher record by linked user id
         /// </summary>
+        [Authorize]
         [HttpGet("User/{userId}")]
         public async Task<IActionResult> GetTeacherByUser(int userId)
         {
             try
             {
-                var teacher = await _dataContext.Set<TeacherBO>()
-                    .FromSqlRaw(@"SELECT t.TeacherID, t.UserID, t.Name, t.Email, t.Phone, t.Address, t.City, t.State,
-                                    t.IDNumber AS IDProofNumber, ip.Name AS IDProofType, t.IsActive, t.CreatedAt, t.UpdatedAt
-                                   FROM Teachers t
-                                   LEFT JOIN IDProofTypes ip ON t.IDProofTypeID = ip.IDProofTypeID
-                                   WHERE t.UserID = @UserID",
+                var teacher = _dataContext.Set<TeacherBO>()
+                    .FromSqlRaw("EXEC sp_GetTeacherByUserId @UserID",
                         new SqlParameter("@UserID", userId))
                     .AsNoTracking()
-                    .FirstOrDefaultAsync();
+                    .AsEnumerable()
+                    .FirstOrDefault();
 
                 if (teacher == null)
                     return NotFound(new { message = "Teacher not found for user" });
@@ -100,6 +101,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get teacher's active assignments for current academic year by user id
         /// </summary>
+        [Authorize]
         [HttpGet("User/{userId}/Assignments")]
         public async Task<IActionResult> GetTeacherAssignmentsByUser(int userId)
         {
@@ -127,7 +129,7 @@ namespace StudenthubAPI.Controllers
                         cmd.CommandText = @"SELECT ta.TeacherAssignmentID AS Id, ta.TeacherID AS TeacherId, ta.ClusterID AS ClusterId,
                                                     ta.ProgramID AS ProgramId, ta.AcademicYearID AS AcademicYearId, ta.Role AS Role,
                                                     ta.IsActive AS IsActive, ta.CreatedAt AS CreatedAt, ta.UpdatedAt AS UpdatedAt,
-                                                    c.ClusterID AS Cluster_Id, c.Name AS Cluster_Name,
+                                                    c.ClusterID AS Cluster_Id, c.Name AS Cluster_Name, c.Latitude, c.Longitude, c.GeoRadiusMeters,c.City,
                                                     p.ProgramID AS Program_Id, p.Name AS Program_Name,
                                                     ay.AcademicYearID AS AcademicYear_Id, ay.Name AS AcademicYear_Name
                                            FROM TeacherAssignments ta
@@ -152,6 +154,11 @@ namespace StudenthubAPI.Controllers
                                 var updatedAt = reader["UpdatedAt"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["UpdatedAt"]);
 
                                 var clusterName = reader["Cluster_Name"] == DBNull.Value ? null : reader["Cluster_Name"].ToString();
+                                var latitude = reader["Latitude"] == DBNull.Value ? null : reader["Latitude"].ToString();
+                                var longitude = reader["Longitude"] == DBNull.Value ? null : reader["Longitude"].ToString();
+                                var geoRadiusMeters = reader["GeoRadiusMeters"] == DBNull.Value ? null : reader["GeoRadiusMeters"].ToString();
+                                var clusterCity = reader["City"] == DBNull.Value ? null : reader["City"].ToString();
+
                                 var programName = reader["Program_Name"] == DBNull.Value ? null : reader["Program_Name"].ToString();
                                 var academicYearName = reader["AcademicYear_Name"] == DBNull.Value ? null : reader["AcademicYear_Name"].ToString();
 
@@ -166,7 +173,7 @@ namespace StudenthubAPI.Controllers
                                     is_active = isActive,
                                     created_at = createdAt,
                                     updated_at = updatedAt,
-                                    clusters = new { id = clusterId.ToString(), name = clusterName },
+                                    clusters = new { id = clusterId.ToString(), name = clusterName, latitude = latitude, longitude = longitude, geo_radius_meters = geoRadiusMeters, city = clusterCity},
                                     programs = new { id = programId.ToString(), name = programName },
                                     academic_years = new { id = academicYearId.ToString(), name = academicYearName }
                                 });
@@ -194,6 +201,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Delete a teacher (soft delete)
         /// </summary>
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTeacher(int id)
         {
@@ -223,6 +231,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Create a new teacher
         /// </summary>
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateTeacher([FromBody] CreateTeacherBO createTeacherBO)
         {
@@ -239,25 +248,30 @@ namespace StudenthubAPI.Controllers
                 };
 
                 await _dataContext.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_InsertTeacher @UserID, @Name, @Email, @Phone, @Address, " +
-                    "@City, @State, @IDProofTypeID, @IDNumber, @Output OUTPUT",
+                    "EXEC sp_InsertTeacher @UserID, @Name, @Gender, @DateOfBirth, @Email, @Phone, @Address, " +
+                    "@City, @State, @Notes, @IDProofTypeID, @IDNumber, @TeacherID OUTPUT, @Output OUTPUT",
                     new SqlParameter("@UserID", (object)createTeacherBO.UserID ?? DBNull.Value),
                     new SqlParameter("@Name", createTeacherBO.Name),
+                    new SqlParameter("@Gender", createTeacherBO.Gender),
+                    new SqlParameter("@DateOfBirth", createTeacherBO.DateOfBirth),
                     new SqlParameter("@Email", (object)createTeacherBO.Email ?? DBNull.Value),
                     new SqlParameter("@Phone", (object)createTeacherBO.Phone ?? DBNull.Value),
                     new SqlParameter("@Address", (object)createTeacherBO.Address ?? DBNull.Value),
                     new SqlParameter("@City", (object)createTeacherBO.City ?? DBNull.Value),
                     new SqlParameter("@State", (object)createTeacherBO.State ?? DBNull.Value),
+                    new SqlParameter("@Notes", (object)createTeacherBO.Notes ?? DBNull.Value),
                     new SqlParameter("@IDProofTypeID", (object)createTeacherBO.IDProofTypeID ?? DBNull.Value),
                     new SqlParameter("@IDNumber", (object)createTeacherBO.IDNumber ?? DBNull.Value),
+                    teacherIdParameter,
                     outputParameter);
 
                 var result = outputParameter.Value?.ToString();
+                var teacherId = teacherIdParameter.Value != DBNull.Value ? (int)teacherIdParameter.Value : 0;
 
-                if (result == "Success")
+                if (result == "Success" && teacherId > 0)
                 {
-                    return CreatedAtAction(nameof(GetTeacherById), new { id = teacherIdParameter.Value },
-                        new { message = "Teacher created successfully", teacherId = teacherIdParameter.Value });
+                    return CreatedAtAction(nameof(GetTeacherById), new { id = teacherId },
+                        new { message = "Teacher created successfully", teacherId = teacherId });
                 }
 
                 return BadRequest(new { message = "Failed to create teacher" });
@@ -275,6 +289,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Update an existing teacher
         /// </summary>
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTeacher(int id, [FromBody] UpdateTeacherBO updateTeacherBO)
         {
@@ -286,15 +301,18 @@ namespace StudenthubAPI.Controllers
                 };
 
                 await _dataContext.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_UpdateTeacher @TeacherID, @Name, @Email, @Phone, @Address, " +
-                    "@City, @State, @IDProofTypeID, @IDNumber, @Output OUTPUT",
+                    "EXEC sp_UpdateTeacher @TeacherID, @Name, @Gender, @DateOfBirth, @Email, @Phone, @Address, " +
+                    "@City, @State, @Notes, @IDProofTypeID, @IDNumber, @Output OUTPUT",
                     new SqlParameter("@TeacherID", id),
                     new SqlParameter("@Name", (object)updateTeacherBO.Name ?? DBNull.Value),
+                    new SqlParameter("@Gender", (object)updateTeacherBO.Gender ?? DBNull.Value),
+                    new SqlParameter("@DateOfBirth", (object)updateTeacherBO.DateOfBirth ?? DBNull.Value),
                     new SqlParameter("@Email", (object)updateTeacherBO.Email ?? DBNull.Value),
                     new SqlParameter("@Phone", (object)updateTeacherBO.Phone ?? DBNull.Value),
                     new SqlParameter("@Address", (object)updateTeacherBO.Address ?? DBNull.Value),
                     new SqlParameter("@City", (object)updateTeacherBO.City ?? DBNull.Value),
                     new SqlParameter("@State", (object)updateTeacherBO.State ?? DBNull.Value),
+                    new SqlParameter("@Notes", (object)updateTeacherBO.Notes ?? DBNull.Value),
                     new SqlParameter("@IDProofTypeID", (object)updateTeacherBO.IDProofTypeID ?? DBNull.Value),
                     new SqlParameter("@IDNumber", (object)updateTeacherBO.IDNumber ?? DBNull.Value),
                     outputParameter);
@@ -312,6 +330,19 @@ namespace StudenthubAPI.Controllers
             {
                 return StatusCode(500, new { message = "An error occurred while updating teacher", error = ex.Message });
             }
+        }
+
+        [Authorize]
+        [HttpPut("{id}/Photo")]
+        public async Task<IActionResult> UpdateTeacherPhoto(int id, [FromBody] UpdatePhotoRequest request)
+        {
+            await _dataContext.Database.ExecuteSqlRawAsync(
+                "UPDATE Teachers SET PhotoDocumentId = @DocumentID WHERE TeacherID = @TeacherID",
+                new SqlParameter("@DocumentID", request.DocumentId),
+                new SqlParameter("@TeacherID", id)
+            );
+
+            return Ok(new { message = "Family member photo updated" });
         }
 
         #endregion

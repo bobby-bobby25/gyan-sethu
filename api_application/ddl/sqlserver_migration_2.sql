@@ -3,7 +3,7 @@
 -- SQL Server Migration for StudentHub Application
 -- =============================================
 
-USE [P2_PROD_IGB_Replica]
+USE [gyansethu]
 GO
 
 -- =============================================

@@ -12,7 +12,7 @@
         public string Username { get; set; }
         public string Role { get; set; }    
         public int LoginId { get; set; }
-        public string RefreshExpiry { get; set; }
+        public string? RefreshExpiry { get; set; }
         public string Type { get; set; }
     }
 

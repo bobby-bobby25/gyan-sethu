@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,18 @@ const Login = () => {
     password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { userRole } = useAuth();
 
   // Redirect if already logged in
-  if (user) {
-    navigate("/dashboard", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      // if (userRole === "teacher") {
+      //   navigate("/teacher-app", { replace: true });
+      // } else {
+        navigate("/dashboard", { replace: true });
+      // }
+    }
+  }, [user, userRole, navigate]);
 
   const validateForm = () => {
     try {
@@ -70,7 +76,7 @@ const Login = () => {
         }
       } else {
         toast.success("Welcome back to GyanSethu!");
-        navigate("/dashboard");
+        // Navigation will be handled by the useEffect after role is set
       }
     } catch (err) {
       toast.error("An unexpected error occurred. Please try again.");

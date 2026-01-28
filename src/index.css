@@ -270,3 +270,23 @@ input::placeholder,
 textarea::placeholder {
   @apply text-muted-foreground/50;
 }
+
+/* Mobile safe area support */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch-friendly controls */
+@media (hover: none) and (pointer: coarse) {
+  button, 
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

@@ -77,7 +77,7 @@ export function TeacherAssignmentDialog({
         cluster_id: assignment.cluster_id,
         program_id: assignment.program_id,
         academic_year_id: assignment.academic_year_id,
-        role: assignment.role === "main" ? "main" : "backup",
+        role: assignment.role,
       });
     } else {
       const currentYear = academicYears?.find((y) => y.is_current);

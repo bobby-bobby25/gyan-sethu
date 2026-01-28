@@ -8,6 +8,7 @@ export type Cluster = {
   address: string | null;
   city: string | null;
   state: string | null;
+  notes: string | null;
   latitude: number | null;
   longitude: number | null;
   geo_radius_meters: number | null;
@@ -27,6 +28,7 @@ export type ClusterInsert = {
   address?: string | null;
   city?: string | null;
   state?: string | null;
+  notes?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   geo_radius_meters?: number | null;
@@ -51,10 +53,49 @@ export const useClustersWithStats = () => {
     queryKey: ["clusters-with-stats"],
     queryFn: async () => {
       const response = await api.get("/Clusters/Stats");
-      return response.data as ClusterWithStats[];
+
+      const mapClusterWithStats = (row: any): ClusterWithStats => ({
+        id: String(row.id),
+
+        name: row.name,
+        address: row.address ?? null,
+        city: row.city ?? null,
+        state: row.state ?? null,
+        notes: row.notes ?? null,
+
+        latitude:
+          row.latitude !== null && row.latitude !== undefined
+            ? Number(row.latitude)
+            : null,
+
+        longitude:
+          row.longitude !== null && row.longitude !== undefined
+            ? Number(row.longitude)
+            : null,
+
+        geo_radius_meters:
+          row.geo_radius_meters !== null && row.geo_radius_meters !== undefined
+            ? Number(row.geo_radius_meters)
+            : null,
+
+        is_active: Boolean(row.is_active),
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+
+        student_count: Number(row.student_count ?? 0),
+        teacher_count: Number(row.teacher_count ?? 0),
+
+        programs:
+          typeof row.programs === "string" && row.programs.trim().length > 0
+            ? row.programs.split(",").map((p: string) => p.trim())
+            : [],
+      });
+
+      return (response.data as any[]).map(mapClusterWithStats);
     },
   });
 };
+
 
 export const useCluster = (id: string | null) => {
   return useQuery({
@@ -74,7 +115,53 @@ export const useClusterTeachers = (clusterId: string | null) => {
     queryFn: async () => {
       if (!clusterId) return [];
       const response = await api.get(`/Clusters/${clusterId}/Teachers`);
-      return response.data;
+      const mappedTeachers = response.data
+        .filter((row: any) => row.teacher_assignment_id)
+        .map((row: any) => ({
+          id: String(row.teacher_assignment_id),
+
+          role: row.role,
+
+          teacher_id: String(row.id),
+          cluster_id: String(row.cluster_id),
+          program_id: String(row.program_id),
+          academic_year_id: String(row.academic_year_id),
+
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          is_active: row.is_active,
+
+          teachers: {
+            id: String(row.id),
+            name: row.name,
+            email: row.email,
+            phone: row.phone
+          },
+
+          clusters: row.cluster
+            ? {
+                id: String(row.cluster_id),
+                name: row.cluster
+              }
+            : null,
+
+          programs: row.program
+            ? {
+                id: String(row.program_id),
+                name: row.program
+              }
+            : null,
+
+          academic_years: row.academic_year_name
+            ? {
+                id: String(row.academic_year_id),
+                name: row.academic_year_name,
+                is_current: row.academic_year_is_current
+              }
+            : null
+        }));
+
+      return mappedTeachers;
     },
     enabled: !!clusterId,
   });
@@ -86,7 +173,31 @@ export const useClusterStudents = (clusterId: string | null) => {
     queryFn: async () => {
       if (!clusterId) return [];
       const response = await api.get(`/Clusters/${clusterId}/Students`);
-      return response.data;
+      const mappedStudents = response.data.map((row: any) => ({
+        id: String(row.id),
+
+        students: {
+          id: String(row.student_id ?? row.id),
+          name: row.student_name ?? row.name,
+          student_code: row.student_code
+        },
+
+        programs: row.program
+          ? {
+              id: String(row.program_id),
+              name: row.program
+            }
+          : null,
+
+        academic_years: row.academic_year_name
+          ? {
+              id: String(row.academic_year_id),
+              name: row.academic_year_name,
+              is_current: row.academic_year_is_current
+            }
+          : null
+      }));
+      return mappedStudents;
     },
     enabled: !!clusterId,
   });

@@ -10,9 +10,15 @@ export interface Student {
   phone: string;
   dob: string;
   gender: string;
+  city: string;
+  state: string;
+  ambition: string;
+  hobbies: string[];
+  notes: string;
   caste_category_id: string;
   id_proof_type_id: string;
   id_proof_number: string;
+  photo_document_id: number | null;
   address: string;
   created_at: string;
   updated_at: string;
@@ -26,6 +32,11 @@ export interface StudentInsert {
   phone?: string;
   dob?: string;
   gender?: string;
+  city: string;
+  state: string;
+  ambition: string;
+  hobbies: string[];
+  notes: string;
   caste_category_id?: string;
   id_proof_type_id?: string;
   id_proof_number?: string;
@@ -59,6 +70,9 @@ export interface StudentFilters {
   isActive?: boolean;
 }
 
+const formatForDateInput = (value?: string) =>
+  value ? value.split("T")[0] : "";
+
 export function useStudents(filters?: StudentFilters) {
   return useQuery({
     queryKey: ["students", filters],
@@ -71,7 +85,77 @@ export function useStudents(filters?: StudentFilters) {
         if (filters?.isActive !== undefined) params.append("isActive", String(filters.isActive));
 
         const response = await api.get(`/Students${params.toString() ? '?' + params.toString() : ''}`);
-        return response.data as StudentWithDetails[];
+
+        const mappedStudents: Student[] = response.data.map((row: any) => ({
+          id: String(row.id),
+          name: row.name,
+          student_code: row.student_code,
+
+          // assuming these may come later or be nullable
+          email: row.email ?? "",
+          phone: row.phone ?? "",
+          gender: row.gender ?? "",
+          city: row.city ?? "",
+          state: row.state ?? "",
+          notes: row.notes ?? "",
+          ambition: row.ambition ?? "",
+          hobbies:
+          typeof row.hobbies === "string" && row.hobbies.trim().length > 0
+            ? row.hobbies.split(",").map((p: string) => p.trim())
+            : [],
+
+
+          dob: formatForDateInput(row.dob),
+          caste_category_id: String(row.caste_category_id),
+          id_proof_type_id: String(row.id_proof_type_id),
+          id_proof_number: row.id_proof_number,
+          photo_document_id: row.photo_document_id,
+          address: row.address,
+
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          is_active: row.is_active,
+
+          caste_categories: row.caste_category
+            ? { name: row.caste_category }
+            : null,
+
+          id_proof_types: row.id_proof_type
+            ? { name: row.id_proof_type }
+            : null,
+
+          current_academic_record: row.academic_record_id
+            ? {
+                id: String(row.academic_record_id),
+                cluster_id: String(row.cluster_id),
+                program_id: String(row.program_id),
+                academic_year_id: String(row.academic_year_id),
+
+                class_grade: row.class_grade,
+                school_name: row.school_name,
+                attendance_percentage: row.attendance_percentage,
+                result_percentage: row.result_percentage,
+
+                clusters: row.cluster
+                  ? { name: row.cluster }
+                  : null,
+
+                programs: row.program
+                  ? { name: row.program }
+                  : null,
+
+                academic_years: row.academic_year_name
+                  ? {
+                      name: row.academic_year_name,
+                      is_current: row.academic_year_is_current
+                    }
+                  : null
+              }
+            : null
+        }));
+
+        return mappedStudents;
+        // return response.data as StudentWithDetails[];
       } catch (error) {
         throw error;
       }
@@ -131,6 +215,28 @@ export function useUpdateStudent() {
     },
   });
 }
+
+export function useUpdateStudentPhoto() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({studentId, documentId,}: { studentId: string; documentId: number; }) => {
+      const response = await api.put(`/Students/${studentId}/Photo`, { documentId });
+      return response.data;
+    },
+
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({queryKey: ["student", variables.studentId],});
+      toast.success("Student photo updated successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(`Failed to update student photo: ${ error?.response?.data?.message || error.message }`);
+    },
+  });
+}
+
 
 export function useDeleteStudent() {
   const queryClient = useQueryClient();
@@ -196,6 +302,80 @@ export function useAcademicYears() {
     queryFn: async () => {
       const response = await api.get("/AcademicYears?isActive=true");
       return response.data;
+    },
+  });
+}
+
+export function useAmbitions() {
+  return useQuery({
+    queryKey: ["ambitions"],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get("/MasterData/Ambitions");
+        return data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+        }));
+      } catch (error) {
+        console.error("Error fetching ambitions:", error);
+        throw error;
+      }
+    },
+  });
+}
+
+export function useHobbies() {
+  return useQuery({
+    queryKey: ["hobbies"],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get("/MasterData/Hobbies");
+        return data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+        }));
+      } catch (error) {
+        console.error("Error fetching hobbies:", error);
+        throw error;
+      }
+    },
+  });
+}
+
+export function useCities() {
+  return useQuery({
+    queryKey: ["cities"],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get("/MasterData/Cities");
+        return data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          state: row.state,
+        }));
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+        throw error;
+      }
+    },
+  });
+}
+
+export function useStates() {
+  return useQuery({
+    queryKey: ["states"],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get("/MasterData/States");
+        return data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          code: row.code,
+        }));
+      } catch (error) {
+        console.error("Error fetching states:", error);
+        throw error;
+      }
     },
   });
 }

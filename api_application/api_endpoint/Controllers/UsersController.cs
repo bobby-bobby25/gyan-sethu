@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudenthubAPI.Controllers
 {
@@ -24,6 +25,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get all users with their roles
         /// </summary>
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -45,6 +47,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Get a specific user by ID
         /// </summary>
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
@@ -74,6 +77,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Update user profile information
         /// </summary>
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUserProfile(int id, [FromBody] UpdateUserBO updateUserBO)
         {
@@ -85,10 +89,11 @@ namespace StudenthubAPI.Controllers
                 };
 
                 await _dataContext.Database.ExecuteSqlRawAsync(
-                    "EXEC sp_UpdateUserProfile @UserID, @FullName, @Phone, @Output OUTPUT",
+                    "EXEC sp_UpdateUserProfile @UserID, @FullName, @Phone, @RoleName, @Output OUTPUT",
                     new SqlParameter("@UserID", id),
                     new SqlParameter("@FullName", (object)updateUserBO.FullName ?? DBNull.Value),
                     new SqlParameter("@Phone", (object)updateUserBO.Phone ?? DBNull.Value),
+                    new SqlParameter("@RoleName", (object)updateUserBO.Role ?? DBNull.Value),
                     outputParameter);
 
                 var result = outputParameter.Value?.ToString();
@@ -109,6 +114,7 @@ namespace StudenthubAPI.Controllers
         /// <summary>
         /// Update user role
         /// </summary>
+        [Authorize]
         [HttpPut("{id}/role")]
         public async Task<IActionResult> UpdateUserRole(int id, [FromBody] UpdateUserRoleBO updateRoleBO)
         {

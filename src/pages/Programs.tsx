@@ -1,19 +1,17 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
   BookOpen,
-  Users,
-  MapPin,
   MoreHorizontal,
   Eye,
   Edit,
   Trash2,
-  UserCheck,
+  ArrowRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,14 +25,23 @@ import ProgramFormDialog from "@/components/programs/ProgramFormDialog";
 import ProgramDetailDialog from "@/components/programs/ProgramDetailDialog";
 import DeleteProgramDialog from "@/components/programs/DeleteProgramDialog";
 
-// Color palette for programs
-const programColors = [
-  "bg-primary",
-  "bg-info",
-  "bg-accent",
-  "bg-success",
-  "bg-warning",
-  "bg-destructive",
+// Bold accent colors for left border
+const programBorderColors = [
+  "border-l-primary",
+  "border-l-info",
+  "border-l-accent",
+  "border-l-success",
+  "border-l-warning",
+  "border-l-destructive",
+];
+
+const programIconColors = [
+  "bg-primary text-primary-foreground",
+  "bg-info text-info-foreground",
+  "bg-accent text-accent-foreground",
+  "bg-success text-success-foreground",
+  "bg-warning text-warning-foreground",
+  "bg-destructive text-destructive-foreground",
 ];
 
 const Programs = () => {
@@ -65,17 +72,19 @@ const Programs = () => {
     setFormOpen(true);
   };
 
-  const getProgramColor = (index: number) => {
-    return programColors[index % programColors.length];
+  const getBorderColor = (index: number) => {
+    return programBorderColors[index % programBorderColors.length];
   };
 
-  // Consider mapping API fields (e.g., programID -> id) in your data hook for consistency
-  const formatCount = (count?: number) => {
-    if (typeof count !== "number" || isNaN(count)) return "0";
-    if (count >= 1000) {
-      return (count / 1000).toFixed(1) + "K";
-    }
-    return count.toString();
+  const getIconColor = (index: number) => {
+    return programIconColors[index % programIconColors.length];
+  };
+
+  const getEmptyHint = (program: ProgramWithStats) => {
+    if (program.cluster_count === 0) return "No clusters assigned yet";
+    if (program.student_count === 0) return "No students enrolled yet";
+    if (program.teacher_count === 0) return "No teachers assigned yet";
+    return null;
   };
 
   return (
@@ -94,23 +103,21 @@ const Programs = () => {
 
         {/* Loading State */}
         {isLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} variant="elevated">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start gap-4">
-                    <Skeleton className="w-12 h-12 rounded-xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="border-l-4 border-l-muted">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
                     <div className="space-y-2 flex-1">
-                      <Skeleton className="h-6 w-40" />
+                      <Skeleton className="h-5 w-40" />
                       <Skeleton className="h-4 w-full" />
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4 py-4">
-                    <Skeleton className="h-16" />
-                    <Skeleton className="h-16" />
-                    <Skeleton className="h-16" />
+                  <div className="grid grid-cols-3 gap-4 mt-5">
+                    <Skeleton className="h-14" />
+                    <Skeleton className="h-14" />
+                    <Skeleton className="h-14" />
                   </div>
                 </CardContent>
               </Card>
@@ -129,107 +136,132 @@ const Programs = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {programs?.map((program, index) => (
-              <Card
-                key={program.id}
-                variant="elevated"
-                className={!program.is_active ? "opacity-70" : ""}
-              >
-                <CardHeader className="flex flex-row items-start justify-between pb-3">
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-xl ${getProgramColor(index)} flex items-center justify-center shrink-0`}
-                    >
-                      <BookOpen className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle>{program.name}</CardTitle>
-                        <Badge
-                          variant={program.is_active ? "success" : "secondary"}
-                        >
-                          {program.is_active ? "Active" : "Inactive"}
-                        </Badge>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {programs?.map((program, index) => {
+              const emptyHint = getEmptyHint(program);
+              return (
+                <Card
+                  key={program.id}
+                  className={`border-l-4 ${getBorderColor(index)} bg-primary/5 transition-all cursor-pointer hover:shadow-lg hover:border-l-[6px] ${!program.is_active ? "opacity-60" : ""}`}
+                  onClick={() => handleView(program)}
+                >
+                  <CardContent className="p-0">
+                    {/* Header with darker green background */}
+                    <div className="bg-primary/15 p-4 rounded-t-lg">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                          <div
+                            className={`w-9 h-9 rounded-lg ${getIconColor(index)} flex items-center justify-center shrink-0`}
+                          >
+                            <BookOpen className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-lg font-bold text-foreground leading-tight">
+                                {program.name}
+                              </h3>
+                              <Badge
+                                variant={program.is_active ? "success" : "secondary"}
+                                className="shrink-0 text-[10px]"
+                              >
+                                {program.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </div>
+                            {program.description && (
+                              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-1">
+                                {program.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon-sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleView(program);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" /> View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(program);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="gap-2 text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(program);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      {program.description && (
-                        <p className="text-sm text-muted-foreground mt-1 max-w-md line-clamp-2">
-                          {program.description}
+                    </div>
+
+                    {/* Metrics - Number-first, label-secondary */}
+                    <div className="grid grid-cols-3 gap-4 p-4 border-t">
+                      <div>
+                        <p className={`text-2xl font-bold ${program.cluster_count === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                          {program.cluster_count}
                         </p>
-                      )}
+                        <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">Clusters</p>
+                      </div>
+                      <div>
+                        <p className={`text-2xl font-bold ${program.student_count === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                          {program.student_count}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">Students</p>
+                      </div>
+                      <div>
+                        <p className={`text-2xl font-bold ${program.teacher_count === 0 ? "text-muted-foreground/30" : "text-foreground"}`}>
+                          {program.teacher_count}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">Teachers</p>
+                      </div>
                     </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreHorizontal className="h-4 w-4" />
+
+                    {/* Empty state hint - only for zero-data */}
+                    {program.cluster_count === 0 && program.student_count === 0 && program.teacher_count === 0 && (
+                      <p className="text-[11px] text-warning mt-2 font-medium">
+                        No clusters assigned yet
+                      </p>
+                    )}
+
+                    {/* Primary Action */}
+                    <div className="flex items-center justify-end mt-3 pt-3 border-t">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="gap-1.5 h-8 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleView(program);
+                        }}
+                      >
+                        View Details
+                        <ArrowRight className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onClick={() => handleView(program)}
-                      >
-                        <Eye className="h-4 w-4" /> View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="gap-2"
-                        onClick={() => handleEdit(program)}
-                      >
-                        <Edit className="h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="gap-2 text-destructive focus:text-destructive"
-                        onClick={() => handleDelete(program)}
-                      >
-                        <Trash2 className="h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4 py-4 border-t border-b">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
-                        <MapPin className="h-4 w-4" />
-                        <span className="text-xs">Clusters</span>
-                      </div>
-                      <p className="text-xl font-display font-bold">
-                        {formatCount(program.cluster_count)}
-                      </p>
                     </div>
-                    <div className="text-center border-x">
-                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
-                        <Users className="h-4 w-4" />
-                        <span className="text-xs">Students</span>
-                      </div>
-                      <p className="text-xl font-display font-bold">
-                        {formatCount(program.student_count)}
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
-                        <UserCheck className="h-4 w-4" />
-                        <span className="text-xs">Teachers</span>
-                      </div>
-                      <p className="text-xl font-display font-bold">
-                        {formatCount(program.teacher_count)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-end mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleView(program)}
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

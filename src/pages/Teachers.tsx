@@ -123,11 +123,28 @@ const Teachers = () => {
         {/* Mobile title */}
         <h1 className="text-2xl font-display font-bold sm:hidden">Teachers</h1>
 
-        {/* Action Button */}
-        <div className="flex justify-end">
+        {/* Search, Filters and Action Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 flex-1">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search teachers..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" size="icon">
+              <Filter className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
           <Button
             variant="hero"
-            className="gap-2"
+            className="gap-2 shrink-0"
             onClick={() => {
               setSelectedTeacher(null);
               setFormDialogOpen(true);
@@ -175,61 +192,32 @@ const Teachers = () => {
           </Card>
         </div>
 
-        {/* Filters & Search */}
-        <Card variant="flat" className="border">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or phone..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Teachers Table */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Teacher Records</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredTeachers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {searchQuery
-                  ? "No teachers found matching your search."
-                  : "No teachers found. Add your first teacher to get started."}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Clusters</TableHead>
-                      <TableHead>Programs</TableHead>
-                      <TableHead className="text-center">Role</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+        <div className="border rounded-lg overflow-hidden bg-card">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredTeachers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchQuery
+                ? "No teachers found matching your search."
+                : "No teachers found. Add your first teacher to get started."}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-primary/15 hover:bg-primary/15">
+                    <TableHead className="font-bold text-foreground">Name</TableHead>
+                    <TableHead className="font-bold text-foreground">Contact</TableHead>
+                    <TableHead className="font-bold text-foreground">Clusters</TableHead>
+                    <TableHead className="font-bold text-foreground">Programs</TableHead>
+                    <TableHead className="text-center font-bold text-foreground">Role</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                     {filteredTeachers.map((teacher) => {
                       const clusters = getUniqueValues(
                         teacher.teacher_assignments,
@@ -350,11 +338,10 @@ const Teachers = () => {
                       );
                     })}
                   </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </Table>
+            </div>
+          )}
+        </div>
       </div>
 
       <TeacherFormDialog

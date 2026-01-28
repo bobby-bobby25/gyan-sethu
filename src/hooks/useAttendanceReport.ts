@@ -60,28 +60,27 @@ export const useAttendanceReport = (
       if (programId && programId !== "all") params.append("programId", programId);
 
       const response = await api.get(`/Reports/Attendance?${params.toString()}`);
-      const data = response.data;
+      const rows = response.data ?? [];
 
       // Transform data
-      const records: AttendanceReportData[] = (data.records || []).map(
-        (r: any) => ({
-          id: r.id,
-          attendance_date: r.attendance_date,
-          status_code: r.status_code || "",
-          status_name: r.status_name || "",
-          student_name: r.student_name || "",
-          student_code: r.student_code || "",
-          cluster_id: r.cluster_id || "",
-          cluster_name: r.cluster_name || "",
-          program_id: r.program_id || "",
-          program_name: r.program_name || "",
-          teacher_name: r.teacher_name || null,
-          marked_at: r.marked_at,
-        })
-      );
+      const records: AttendanceReportData[] = rows.map((r: any) => ({
+        id: String(r.id),
+        attendance_date: r.attendance_date,
+        status_code: r.status_code || "",
+        status_name: r.status_name || "",
+        student_name: r.student_name || "",
+        student_code: r.student_code || "",
+        cluster_id: String(r.cluster_id),
+        cluster_name: r.cluster_name || "",
+        program_id: String(r.program_id),
+        program_name: r.program_name || "",
+        teacher_name: r.teacher_name ?? null,
+        marked_at: r.marked_at,
+      }));
 
-      // Calculate cluster stats
+      /* ---------------- CLUSTER STATS ---------------- */
       const clusterMap = new Map<string, ClusterStats>();
+
       records.forEach((r) => {
         if (!clusterMap.has(r.cluster_id)) {
           clusterMap.set(r.cluster_id, {
@@ -93,15 +92,19 @@ export const useAttendanceReport = (
             rate: 0,
           });
         }
+
         const stats = clusterMap.get(r.cluster_id)!;
         stats.total++;
-        if (r.status_code === "P") stats.present++;
-        else stats.absent++;
+        r.status_code === "P" ? stats.present++ : stats.absent++;
+      });
+
+      clusterMap.forEach((stats) => {
         stats.rate = stats.total > 0 ? (stats.present / stats.total) * 100 : 0;
       });
 
-      // Calculate program stats
+      /* ---------------- PROGRAM STATS ---------------- */
       const programMap = new Map<string, ProgramStats>();
+
       records.forEach((r) => {
         if (!programMap.has(r.program_id)) {
           programMap.set(r.program_id, {
@@ -113,15 +116,19 @@ export const useAttendanceReport = (
             rate: 0,
           });
         }
+
         const stats = programMap.get(r.program_id)!;
         stats.total++;
-        if (r.status_code === "P") stats.present++;
-        else stats.absent++;
+        r.status_code === "P" ? stats.present++ : stats.absent++;
+      });
+
+      programMap.forEach((stats) => {
         stats.rate = stats.total > 0 ? (stats.present / stats.total) * 100 : 0;
       });
 
-      // Calculate daily stats
+      /* ---------------- DAILY STATS ---------------- */
       const dailyMap = new Map<string, DailyStats>();
+
       records.forEach((r) => {
         if (!dailyMap.has(r.attendance_date)) {
           dailyMap.set(r.attendance_date, {
@@ -132,14 +139,17 @@ export const useAttendanceReport = (
             rate: 0,
           });
         }
+
         const stats = dailyMap.get(r.attendance_date)!;
         stats.total++;
-        if (r.status_code === "P") stats.present++;
-        else stats.absent++;
+        r.status_code === "P" ? stats.present++ : stats.absent++;
+      });
+
+      dailyMap.forEach((stats) => {
         stats.rate = stats.total > 0 ? (stats.present / stats.total) * 100 : 0;
       });
 
-      // Overall stats
+      /* ---------------- OVERALL STATS ---------------- */
       const present = records.filter((r) => r.status_code === "P").length;
       const absent = records.filter((r) => r.status_code === "A").length;
       const total = records.length;
@@ -152,6 +162,7 @@ export const useAttendanceReport = (
         dailyStats: Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
         overallStats: { present, absent, total, rate },
       };
+
     },
     enabled: !!startDate && !!endDate,
   });

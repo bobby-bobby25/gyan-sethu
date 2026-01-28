@@ -15,16 +15,25 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        // Not logged in, redirect to login
+        // Not logged in - determine which login page to redirect to
+        // const isTeacherRoute = location.pathname.startsWith("/teacher");
+        // navigate(isTeacherRoute ? "/teacher-login" : "/login", { state: { from: location }, replace: true });
+
         navigate("/login", { state: { from: location }, replace: true });
       } else if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
         // User doesn't have required role
-        // Teachers can only access limited pages
-        if (userRole === "teacher") {
-          navigate("/attendance", { replace: true });
-        } else {
-          navigate("/dashboard", { replace: true });
-        }
+        // Teachers should be redirected to teacher app
+        // if (userRole === "teacher") {
+        //   navigate("/teacher-app", { replace: true });
+        // } else {
+        // navigate("/dashboard", { replace: true });
+        // }
+
+          if (userRole === "teacher") {
+            navigate("/attendance", { replace: true });
+          } else {
+            navigate("/dashboard", { replace: true });
+          }
       }
     }
   }, [user, userRole, isLoading, navigate, location, allowedRoles]);

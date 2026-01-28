@@ -9,8 +9,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useUpdateUserRole, UserWithRole, AppRole } from "@/hooks/useUsers";
+import { useUpdateUserRole, UserWithRole } from "@/hooks/useUsers";
 import { Shield, User, UserCog, AlertTriangle } from "lucide-react";
+import { AppRole } from "@/contexts/AuthContext";
 
 interface UserRoleDialogProps {
   open: boolean;

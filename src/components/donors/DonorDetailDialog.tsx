@@ -125,11 +125,11 @@ export function DonorDetailDialog({
           <DialogHeader>
             <div className="flex items-center gap-3">
               <DialogTitle className="text-xl">{donor.name}</DialogTitle>
-              {getDonorTypeBadge(donor.donorType)}
+              {getDonorTypeBadge(donor.donor_type)}
             </div>
-            {donor.donorCode && (
+            {donor.donor_code && (
               <p className="text-sm text-muted-foreground font-mono">
-                {donor.donorCode}
+                {donor.donor_code}
               </p>
             )}
           </DialogHeader>
@@ -278,12 +278,12 @@ export function DonorDetailDialog({
                       {donations
                         .sort(
                           (a, b) =>
-                            new Date(b.donationDate).getTime() -
-                            new Date(a.donationDate).getTime()
+                            new Date(b.donation_date).getTime() -
+                            new Date(a.donation_date).getTime()
                         )
                         .map((donation) => (
                           <TableRow key={donation.id}>
-                            <TableCell>{donation.donationDate}</TableCell>
+                            <TableCell>{donation.donation_date}</TableCell>
                             <TableCell className="text-right font-semibold">
                               {formatCurrency(
                                 donation.amount,
@@ -294,7 +294,7 @@ export function DonorDetailDialog({
                               {donation.payment_modes?.name || "-"}
                             </TableCell>
                             <TableCell className="font-mono text-sm">
-                              {donation.referenceNumber || "-"}
+                              {donation.reference_number || "-"}
                             </TableCell>
                             <TableCell>
                               <DropdownMenu>
@@ -335,7 +335,7 @@ export function DonorDetailDialog({
       <DonationFormDialog
         open={donationDialogOpen}
         onOpenChange={setDonationDialogOpen}
-        donorId={donor.id}
+        donorId={String(donor.id)}
         donation={selectedDonation}
       />
 

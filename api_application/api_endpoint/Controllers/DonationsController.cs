@@ -6,6 +6,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace StudenthubAPI.Controllers
 {
@@ -19,6 +20,7 @@ namespace StudenthubAPI.Controllers
             _context = context;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DonationBO>>> GetAll()
         {
@@ -26,6 +28,7 @@ namespace StudenthubAPI.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<DonationBO>> GetById(int id)
         {
@@ -34,6 +37,7 @@ namespace StudenthubAPI.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult> Create([FromBody] CreateDonationBO donation)
         {
@@ -44,6 +48,7 @@ namespace StudenthubAPI.Controllers
             return Ok();
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<ActionResult> Update(int id, [FromBody] UpdateDonationBO donation)
         {
@@ -54,6 +59,7 @@ namespace StudenthubAPI.Controllers
             return Ok();
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {

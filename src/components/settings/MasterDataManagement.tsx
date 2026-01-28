@@ -22,6 +22,18 @@ import {
   useCreatePaymentMode,
   useUpdatePaymentMode,
   useDeletePaymentMode,
+  useAmbitions,
+  useCreateAmbition,
+  useUpdateAmbition,
+  useDeleteAmbition,
+  useHobbies,
+  useCreateHobby,
+  useUpdateHobby,
+  useDeleteHobby,
+  useCities,
+  useCreateCity,
+  useUpdateCity,
+  useDeleteCity,
 } from "@/hooks/useMasterData";
 
 type MasterDataItem = {
@@ -36,6 +48,7 @@ interface MasterDataCardProps {
   items: MasterDataItem[] | undefined;
   isLoading: boolean;
   hasCode?: boolean;
+  codeLabel?: string;
   onCreate: (name: string, code?: string) => Promise<void>;
   onUpdate: (id: string, name: string, code?: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -50,6 +63,7 @@ const MasterDataCard = ({
   items,
   isLoading,
   hasCode = false,
+  codeLabel = "Code",
   onCreate,
   onUpdate,
   onDelete,
@@ -149,8 +163,8 @@ const MasterDataCard = ({
                   <Input
                     value={newCode}
                     onChange={(e) => setNewCode(e.target.value)}
-                    placeholder="Code"
-                    className="h-8 w-20"
+                    placeholder={codeLabel}
+                    className="h-8 w-24"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleAdd();
                       if (e.key === "Escape") {
@@ -292,6 +306,31 @@ const MasterDataManagement = () => {
   const updatePayment = useUpdatePaymentMode();
   const deletePayment = useDeletePaymentMode();
 
+  // Ambitions
+  const { data: ambitions, isLoading: loadingAmbitions } = useAmbitions();
+  const createAmbition = useCreateAmbition();
+  const updateAmbition = useUpdateAmbition();
+  const deleteAmbition = useDeleteAmbition();
+
+  // Hobbies
+  const { data: hobbies, isLoading: loadingHobbies } = useHobbies();
+  const createHobby = useCreateHobby();
+  const updateHobby = useUpdateHobby();
+  const deleteHobby = useDeleteHobby();
+
+  // Cities
+  const { data: cities, isLoading: loadingCities } = useCities();
+  const createCity = useCreateCity();
+  const updateCity = useUpdateCity();
+  const deleteCity = useDeleteCity();
+
+  // Transform cities to include state as code for display
+  const citiesWithState = cities?.map(city => ({
+    id: city.id,
+    name: city.name,
+    code: city.state,
+  }));
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <MasterDataCard
@@ -372,6 +411,67 @@ const MasterDataManagement = () => {
         isCreating={createPayment.isPending}
         isUpdating={updatePayment.isPending}
         isDeleting={deletePayment.isPending}
+      />
+
+      <MasterDataCard
+        title="Ambitions"
+        description="Student career aspirations"
+        items={ambitions}
+        isLoading={loadingAmbitions}
+        hasCode={false}
+        onCreate={async (name) => {
+          await createAmbition.mutateAsync(name);
+        }}
+        onUpdate={async (id, name) => {
+          await updateAmbition.mutateAsync({ id, name });
+        }}
+        onDelete={async (id) => {
+          await deleteAmbition.mutateAsync(id);
+        }}
+        isCreating={createAmbition.isPending}
+        isUpdating={updateAmbition.isPending}
+        isDeleting={deleteAmbition.isPending}
+      />
+
+      <MasterDataCard
+        title="Hobbies"
+        description="Student interests and activities"
+        items={hobbies}
+        isLoading={loadingHobbies}
+        hasCode={false}
+        onCreate={async (name) => {
+          await createHobby.mutateAsync(name);
+        }}
+        onUpdate={async (id, name) => {
+          await updateHobby.mutateAsync({ id, name });
+        }}
+        onDelete={async (id) => {
+          await deleteHobby.mutateAsync(id);
+        }}
+        isCreating={createHobby.isPending}
+        isUpdating={updateHobby.isPending}
+        isDeleting={deleteHobby.isPending}
+      />
+
+      <MasterDataCard
+        title="Cities"
+        description="City and state for address autocomplete"
+        items={citiesWithState}
+        isLoading={loadingCities}
+        hasCode={true}
+        codeLabel="State"
+        onCreate={async (name, state) => {
+          await createCity.mutateAsync({ name, state: state || "" });
+        }}
+        onUpdate={async (id, name, state) => {
+          await updateCity.mutateAsync({ id, name, state: state || "" });
+        }}
+        onDelete={async (id) => {
+          await deleteCity.mutateAsync(id);
+        }}
+        isCreating={createCity.isPending}
+        isUpdating={updateCity.isPending}
+        isDeleting={deleteCity.isPending}
       />
     </div>
   );

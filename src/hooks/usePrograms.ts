@@ -76,7 +76,38 @@ export const useProgramStudents = (programId: string | null) => {
     queryFn: async () => {
       if (!programId) return [];
       const response = await api.get(`/Programs/${programId}/Students`);
-      return response.data;
+      const mappedStudents = response.data.map((row: any) => ({
+        id: String(row.id),
+
+        students: {
+          id: String(row.student_id ?? row.id),
+          name: row.student_name ?? row.name,
+          student_code: row.student_code
+        },
+
+        clusters: row.cluster
+          ? {
+              id: String(row.cluster_id),
+              name: row.cluster
+            }
+          : null,
+
+        programs: row.program
+          ? {
+              id: String(row.program_id),
+              name: row.program
+            }
+          : null,
+
+        academic_years: row.academic_year_name
+          ? {
+              id: String(row.academic_year_id),
+              name: row.academic_year_name,
+              is_current: row.academic_year_is_current
+            }
+          : null
+      }));
+      return mappedStudents;
     },
     enabled: !!programId,
   });

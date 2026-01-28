@@ -22,7 +22,7 @@ namespace StudenthubAPI.Data
         public string jwtAudience;
         public int jwtExpMin;
         public int refTokExp;
-
+        public readonly DocumentSettings documentSettings;
 
         public DataContext(DbContextOptions<DataContext> options, IConfiguration configuration) : base(options)
         {
@@ -37,6 +37,12 @@ namespace StudenthubAPI.Data
             jwtAudience = configuration.GetValue<string>("Jwt:Audience");
             jwtExpMin = configuration.GetValue<int>("Jwt:AccessTokenExpiryMinutes");
             refTokExp = configuration.GetValue<int>("Jwt:RefreshTokenExpiryDays");
+            //documentSettings = configuration.GetValue<DocumentSettings>("APISettings:DocumentSettings");
+
+            documentSettings = new DocumentSettings();
+            configuration
+                .GetSection("APISettings:DocumentSettings")
+                .Bind(documentSettings);
         }
 
         #region Login
@@ -62,6 +68,10 @@ namespace StudenthubAPI.Data
         public DbSet<ClusterBO> Clusters { get; set; }
         #endregion
 
+        #region Family Member
+        public DbSet<FamilyMemberBO> FamilyMember { get; set; }
+        #endregion
+
         #region Programs
         public DbSet<ProgramBO> Programs { get; set; }
         #endregion
@@ -80,6 +90,10 @@ namespace StudenthubAPI.Data
         public DbSet<CasteCategory> CasteCategories { get; set; }
         public DbSet<AttendanceStatusType> AttendanceStatusTypes { get; set; }
         public DbSet<PaymentModeType> PaymentModes { get; set; }
+        public DbSet<City> Cities { get; set; }
+        public DbSet<State> States { get; set; }
+        public DbSet<Ambition> Ambitions { get; set; }
+        public DbSet<Hobby> Hobbies { get; set; }
         public DbSet<DashboardStats> DashboardStats { get; set; }
         public DbSet<AttendanceInsight> AttendanceInsights { get; set; }
         public DbSet<AttendanceTrend> AttendanceTrends { get; set; }
@@ -102,10 +116,36 @@ namespace StudenthubAPI.Data
             modelBuilder.Entity<TeacherBO>().HasNoKey();
             modelBuilder.Entity<TeacherIdLookup>().HasNoKey();
             modelBuilder.Entity<ClusterBO>().HasNoKey();
+            modelBuilder.Entity<ClusterStatsBO>().HasNoKey();
             modelBuilder.Entity<ProgramBO>().HasNoKey();
+            modelBuilder.Entity<ProgramStatsBO>().HasNoKey();
             modelBuilder.Entity<DonorBO>().HasNoKey();
             modelBuilder.Entity<AttendanceRecordBO>().HasNoKey();
+            modelBuilder.Entity<AttendanceReportBO>().HasNoKey();          
+            modelBuilder.Entity<AttendanceStudentsBO>().HasNoKey();
             modelBuilder.Entity<DonationBO>().HasNoKey();
+            modelBuilder.Entity<FamilyMemberBO>().HasNoKey();
+
+            
+            modelBuilder.Entity<SummaryStatsBO>().HasNoKey();
+            modelBuilder.Entity<ProgramWiseStudentBO>().HasNoKey();
+            modelBuilder.Entity<AttendanceStatsBO>().HasNoKey();
+            modelBuilder.Entity<AttendanceTrendBO>().HasNoKey();
+            modelBuilder.Entity<TeacherUnavailableBO>().HasNoKey();
+            modelBuilder.Entity<ClusterNeedingAttentionBO>().HasNoKey();
+            modelBuilder.Entity<AbsentStudentBO>().HasNoKey();
+            modelBuilder.Entity<ClusterPerformanceBO>().HasNoKey();
+            modelBuilder.Entity<ClusterPerformanceItemBO>().HasNoKey();    
+            modelBuilder.Entity<ClusterPerformanceResponseBO>().HasNoKey();
+            modelBuilder.Entity<DonorDashboardStatsBO>().HasNoKey();
+            modelBuilder.Entity<DonorYearComparisonBO>().HasNoKey();
+            modelBuilder.Entity<MonthlyDonationTrendBO>().HasNoKey();
+            modelBuilder.Entity<DashboardFilterBO>().HasNoKey();
+            modelBuilder.Entity<DocumentBO>().HasNoKey();
+            modelBuilder.Entity<DocumentDetailBO>().HasNoKey();
+            modelBuilder.Entity<DocumentStatsBO>().HasNoKey();
+            
+                
 
             // Master data / dashboard keyless types
             modelBuilder.Entity<AcademicYear>().HasNoKey();
@@ -116,6 +156,7 @@ namespace StudenthubAPI.Data
             modelBuilder.Entity<DashboardStats>().HasNoKey();
             modelBuilder.Entity<AttendanceInsight>().HasNoKey();
             modelBuilder.Entity<AttendanceTrend>().HasNoKey();
+            modelBuilder.Entity<ClusterProgramCombinationBO>().HasNoKey();
         }
     }
 }

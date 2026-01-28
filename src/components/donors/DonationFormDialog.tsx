@@ -47,7 +47,7 @@ type DonationFormValues = z.infer<typeof donationSchema>;
 interface DonationFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  donorId: number;
+  donorId: string;
   donation?: Donation | null;
 }
 
@@ -77,9 +77,9 @@ export function DonationFormDialog({
     if (donation) {
       form.reset({
         amount: donation.amount.toString(),
-        donation_date: donation.donationDate,
-        payment_mode_id: donation.paymentModeID || "",
-        reference_number: donation.referenceNumber || "",
+        donation_date: donation.donation_date,
+        payment_mode_id: donation.payment_mode_id || "",
+        reference_number: donation.reference_number || "",
         currency: donation.currency || "INR",
         remarks: donation.remarks || "",
       });
@@ -97,11 +97,11 @@ export function DonationFormDialog({
 
   const onSubmit = async (values: DonationFormValues) => {
     const donationData = {
-      donorId: donorId,
+      donor_id: donorId,
       amount: parseFloat(values.amount),
-      donationDate: values.donation_date,
-      paymentModeID: values.payment_mode_id || null,
-      referenceNumber: values.reference_number || null,
+      donation_date: values.donation_date,
+      payment_mode_id: values.payment_mode_id || null,
+      reference_number: values.reference_number || null,
       currency: values.currency,
       remarks: values.remarks || null,
     };

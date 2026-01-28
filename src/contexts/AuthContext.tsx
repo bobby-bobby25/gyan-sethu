@@ -32,14 +32,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔁 Restore session from localStorage
+  // Restore session from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("auth_user");
+    const storedProfile = localStorage.getItem("auth_profile");
+    const storedRole = localStorage.getItem("auth_role");
+
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    if (storedProfile) {
+      setProfile(JSON.parse(storedProfile));
+    }
+
+    if (storedRole) {
+      setRole(storedRole as AppRole);
+    }
+
     setIsLoading(false);
   }, []);
+
 
   const signIn = async (email: string, password: string) => {
     const { data } = await api.post("/Login/CheckLoginDetails", {
@@ -49,12 +62,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     localStorage.setItem("access_token", data.accessToken);
     localStorage.setItem("refresh_token", data.refreshToken);
+
     localStorage.setItem("auth_user", JSON.stringify(data.user));
+    localStorage.setItem("auth_profile", JSON.stringify(data.userProfile));
+    localStorage.setItem("auth_role", data.user.role);
 
     setUser(data.user);
     setRole(data.user.role);
     setProfile(data.userProfile);
-    console.log('Profile', profile);
   };
 
   const signOut = () => {

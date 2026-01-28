@@ -11,9 +11,11 @@ export interface Teacher {
   gender: string;
   id_proof_type_id: string;
   id_proof_number: string;
+  photo_document_id: number | null;
   address: string;
   city: string;
   state: string;
+  notes: string;
   created_at: string;
   updated_at: string;
   is_active: boolean;
@@ -25,7 +27,7 @@ export interface TeacherAssignment {
   cluster_id: string;
   program_id: string;
   academic_year_id: string;
-  role: string;
+  role: "main" | "backup";
   created_at: string;
   updated_at: string;
   is_active: boolean;
@@ -38,6 +40,9 @@ export interface TeacherWithAssignments extends Teacher {
   id_proof_types?: { id: string; name: string } | null;
   teacher_assignments?: TeacherAssignment[];
 }
+
+const formatForDateInput = (value?: string) =>
+  value ? value.split("T")[0] : "";
 
 export const useTeachers = () => {
   return useQuery({
@@ -52,7 +57,71 @@ export const useTeachers = () => {
           id: id != null ? String(id) : undefined,
         } as TeacherWithAssignments;
       });
-      return mapped;
+
+      const mappedTeachers: Teacher[] = response.data.map((row: any) => ({
+        id: String(row.id),
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
+
+        dob: formatForDateInput(row.dob),
+        gender: row.gender, 
+
+        id_proof_type_id: String(row.id_proof_type_id),
+        id_proof_number: row.id_proof_number,
+        photo_document_id: row.photo_document_id ?? null,
+
+        address: row.address,
+        city: row.city,
+        state: row.state,
+        notes: row.notes,
+
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        is_active: row.is_active,
+
+        id_proof_types: row.id_proof_type
+          ? {
+              id: String(row.id_proof_type_id),
+              name: row.id_proof_type
+            }
+          : null,
+
+        teacher_assignments: row.teacher_assignment_id
+          ? [
+              {
+                id: String(row.teacher_assignment_id),
+                teacher_id: String(row.id),
+                cluster_id: String(row.cluster_id),
+                program_id: String(row.program_id),
+                academic_year_id: String(row.academic_year_id),
+                role: row.role,
+
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+                is_active: row.is_active,
+
+                clusters: row.cluster
+                  ? { id: String(row.cluster_id), name: row.cluster }
+                  : null,
+
+                programs: row.program
+                  ? { id: String(row.program_id), name: row.program }
+                  : null,
+
+                academic_years: row.academic_year_name
+                  ? {
+                      id: String(row.academic_year_id),
+                      name: row.academic_year_name,
+                      is_current: row.academic_year_is_current
+                    }
+                  : null
+              }
+            ]
+          : []
+      }));
+
+      return mappedTeachers;
     },
   });
 };
@@ -75,20 +144,17 @@ export const useCreateTeacher = () => {
   return useMutation({
     mutationFn: async (teacher: Omit<Teacher, 'id' | 'created_at' | 'updated_at'>) => {
       const payload: any = {
-        Name: teacher.name,
-        Email: teacher.email || null,
-        Phone: teacher.phone || null,
-        Address: teacher.address || null,
-        City: teacher.city || null,
-        State: teacher.state || null,
-        IDProofTypeID: teacher.id_proof_type_id ? parseInt(teacher.id_proof_type_id, 10) : null,
-        IDNumber: teacher.id_proof_number || null,
-        // keep original keys for compatibility
-        id_proof_type_id: teacher.id_proof_type_id,
-        id_proof_number: teacher.id_proof_number,
         name: teacher.name,
-        email: teacher.email,
-        phone: teacher.phone,
+        email: teacher.email || null,
+        phone: teacher.phone || null,
+        address: teacher.address || null,
+        city: teacher.city || null,
+        state: teacher.state || null,
+        gender: teacher.gender || null,
+        dob: teacher.dob || null,
+        notes: teacher.notes || null,
+        id_proof_type_id: teacher.id_proof_type_id ? parseInt(teacher.id_proof_type_id, 10) : null,
+        id_proof_number: teacher.id_proof_number
       };
 
       const response = await api.post("/Teachers", payload);
@@ -124,6 +190,27 @@ export const useUpdateTeacher = () => {
     },
   });
 };
+
+export function useUpdateTeacherPhoto() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({teacherId, documentId,}: { teacherId: string; documentId: number; }) => {
+      const response = await api.put(`/Teachers/${teacherId}/Photo`, { documentId });
+      return response.data;
+    },
+
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      queryClient.invalidateQueries({queryKey: ["teacher", variables.teacherId],});
+      toast.success("Teacher photo updated successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(`Failed to update teacher photo: ${ error?.response?.data?.message || error.message }`);
+    },
+  });
+}
 
 export const useDeleteTeacher = () => {
   const queryClient = useQueryClient();
