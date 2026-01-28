@@ -174,5 +174,100 @@ BEGIN
 END;
 GO
 
-PRINT 'Part 4: Attendance, Donors, Donations & Audit schema created successfully';
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Documents')
+BEGIN
+    CREATE TABLE dbo.Documents (
+        DocumentID INT IDENTITY(1,1) PRIMARY KEY,
+
+        -- Reference Information
+        ReferenceType NVARCHAR(50) NOT NULL,   -- Student, Teacher, Donor, etc
+        ReferenceID INT NOT NULL,
+
+        -- Document Information
+        Name NVARCHAR(255) NOT NULL,
+        DocumentType NVARCHAR(100) NULL,
+        FileUrl NVARCHAR(MAX) NOT NULL,
+        FileType NVARCHAR(50) NULL,
+        FileSize BIGINT NULL,                  -- use BIGINT for files
+
+        -- Metadata
+        UploadedBy INT NULL,
+        Description NVARCHAR(MAX) NULL,
+        Tags NVARCHAR(500) NULL,
+
+        -- Status & Audit
+        IsActive BIT NOT NULL DEFAULT 1,
+        IsVerified BIT NOT NULL DEFAULT 0,
+        VerifiedBy INT NULL,
+        VerifiedAt DATETIME2 NULL,
+        CreatedAt DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        UpdatedAt DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+    );
+END
+GO
+
+CREATE INDEX IX_Documents_ReferenceType
+ON dbo.Documents (ReferenceType);
+GO
+
+CREATE INDEX IX_Documents_ReferenceID
+ON dbo.Documents (ReferenceID);
+GO
+
+CREATE INDEX IX_Documents_ReferenceType_ReferenceID
+ON dbo.Documents (ReferenceType, ReferenceID);
+GO
+
+CREATE INDEX IX_Documents_CreatedAt
+ON dbo.Documents (CreatedAt);
+GO
+
+CREATE INDEX IX_Documents_IsActive
+ON dbo.Documents (IsActive);
+GO
+
+---- =============================================
+---- DOCUMENT CATEGORIES (For type lookup)
+---- =============================================
+--IF OBJECT_ID('dbo.DocumentCategories', 'U') IS NULL
+--BEGIN
+--    CREATE TABLE dbo.DocumentCategories (
+--        DocumentCategoryID INT IDENTITY(1,1) PRIMARY KEY,
+--        Name NVARCHAR(100) NOT NULL UNIQUE,
+--        Description NVARCHAR(255) NULL,
+--        IsActive BIT NOT NULL DEFAULT 1,
+--        CreatedAt DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+--    );
+    
+--    -- Insert default categories
+--    INSERT INTO dbo.DocumentCategories (Name, Description, IsActive) VALUES
+--    ('ID Proof', 'Identity proof documents', 1),
+--    ('Address Proof', 'Address verification documents', 1),
+--    ('Educational Certificate', 'Academic certificates and transcripts', 1),
+--    ('Medical', 'Medical records and health documents', 1),
+--    ('Financial', 'Bank statements and financial documents', 1),
+--    ('Personal', 'Personal documents and records', 1),
+--    ('Administrative', 'Administrative and official documents', 1),
+--    ('Other', 'Other miscellaneous documents', 1);
+--END
+--GO
+
+-- =============================================
+-- UPDATED_AT TRIGGER
+-- =============================================
+CREATE OR ALTER TRIGGER TRG_Documents_UpdatedAt
+ON dbo.Documents
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE d
+    SET UpdatedAt = SYSDATETIME()
+    FROM dbo.Documents d
+    INNER JOIN inserted i ON d.DocumentID = i.DocumentID;
+END
+GO
+
+
+PRINT 'Part 4: Attendance, Donors, Donations, Documents & Audit schema created successfully';
 GO
