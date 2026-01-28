@@ -74,7 +74,6 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 // Enable CORS
-app.UseCors();
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

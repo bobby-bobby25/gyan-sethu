@@ -242,7 +242,7 @@ namespace StudenthubAPI.Controllers
         /// Download a document
         /// GET /api/Documents/123/Download
         /// </summary>
-        [Authorize]
+        [AllowAnonymous]
         [HttpGet("{id}/Download")]
         public async Task<IActionResult> DownloadDocument(int id)
         {
