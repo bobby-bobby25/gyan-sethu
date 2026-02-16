@@ -126,7 +126,7 @@ const Teachers = () => {
         {/* Search, Filters and Action Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2 flex-1">
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full flex-1 sm:flex-[0.66]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search teachers..."
@@ -135,12 +135,12 @@ const Teachers = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="icon">
+            {/* <Button variant="outline" size="icon">
               <Filter className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="icon">
               <Download className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </div>
           <Button
             variant="hero"

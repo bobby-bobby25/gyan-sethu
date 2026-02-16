@@ -6,17 +6,17 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
 import Clusters from "./pages/Clusters";
+import LearningCentres from "./pages/LearningCentres";
 import Programs from "./pages/Programs";
 import Attendance from "./pages/Attendance";
 import Donors from "./pages/Donors";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import TeacherLogin from "./pages/TeacherLogin";
-import TeacherApp from "./pages/TeacherApp";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Teacher Mobile App Routes */}
             {/* <Route path="/teacher-login" element={<TeacherLogin />} />
@@ -71,6 +72,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin", "management"]}>
                   <Clusters />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/learning-centres"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "management"]}>
+                  <LearningCentres />
                 </ProtectedRoute>
               }
             />

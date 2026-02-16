@@ -39,7 +39,8 @@ import {
   useAllAttendanceRecords,
   useAttendanceStatusTypes,
 } from "@/hooks/useAttendance";
-import { useClusters, usePrograms } from "@/hooks/useTeachers";
+import { usePrograms } from "@/hooks/useTeachers";
+import { useLearningCentresHook } from "@/hooks/useLearningCentres";
 import { AttendanceMarking } from "@/components/attendance/AttendanceMarking";
 import AttendanceReports from "@/components/attendance/AttendanceReports";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,17 +51,17 @@ const Attendance = () => {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [filterCluster, setFilterCluster] = useState("all");
+  const [filterLearningCentre, setFilterLearningCentre] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
   const { data: records, isLoading: recordsLoading } = useAllAttendanceRecords(
     selectedDate,
-    filterCluster,
+    filterLearningCentre,
     filterProgram,
     filterStatus
   );
-  const { data: clusters } = useClusters();
+  const { data: learning_centres } = useLearningCentresHook();
   const { data: programs } = usePrograms();
   const { data: statusTypes } = useAttendanceStatusTypes();
   const isTeacher = userRole === "teacher";
@@ -80,17 +81,17 @@ const Attendance = () => {
 
   const uniqueClusters = useMemo(() => {
     if (!records) return 0;
-    return new Set(records.map((r) => r.cluster_id)).size;
+    return new Set(records.map((r) => r.learning_centre_id)).size;
   }, [records]);
 
   return (
     <DashboardLayout pageTitle="Attendance" pageSubtitle="Track and manage student attendance across all clusters">
       <div className="space-y-6">
         {/* Mobile title */}
-        <h1 className="text-2xl font-display font-bold sm:hidden">Attendance</h1>
+        {/* <h1 className="text-2xl font-display font-bold sm:hidden">Attendance</h1> */}
 
         {/* Action Row */}
-        <div className="flex items-center justify-end gap-3">
+        {/* <div className="flex items-center justify-end gap-3">
           <Badge variant="info" className="gap-1">
             <Calendar className="h-3 w-3" />
             {format(new Date(selectedDate), "MMM dd, yyyy")}
@@ -99,49 +100,48 @@ const Attendance = () => {
             <Download className="h-4 w-4" />
             Export
           </Button>
-        </div>
+        </div> */}
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="mark" className="gap-2">
-              <CalendarCheck className="h-4 w-4" />
-              Mark Attendance
-            </TabsTrigger>
-            {/* <TabsTrigger value="view" className="gap-2">
-              <List className="h-4 w-4" />
-              View Records
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Reports
-            </TabsTrigger> */}
-
-            {!isTeacher && (
-              <TabsTrigger value="view" className="gap-2">
+        {/* Tabs - Show on desktop always, on mobile only if not teacher */}
+        <div className={isTeacher ? "hidden sm:block" : "block"}>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="bg-muted rounded-lg p-1">
+              <TabsTrigger value="mark" className="gap-2 rounded-md">
+                <CalendarCheck className="h-4 w-4" />
+                Mark Attendance
+              </TabsTrigger>
+              {/* <TabsTrigger value="view" className="gap-2">
                 <List className="h-4 w-4" />
                 View Records
               </TabsTrigger>
-            )}
-
-            {!isTeacher && (
               <TabsTrigger value="reports" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Reports
-              </TabsTrigger>
-            )}
+              </TabsTrigger> */}
 
+              {!isTeacher && (
+                <TabsTrigger value="view" className="gap-2 rounded-md">
+                  <List className="h-4 w-4" />
+                  View Records
+                </TabsTrigger>
+              )}
 
-          </TabsList>
+              {!isTeacher && (
+                <TabsTrigger value="reports" className="gap-2 rounded-md">
+                  <BarChart3 className="h-4 w-4" />
+                  Reports
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-          {/* Mark Attendance Tab */}
-          <TabsContent value="mark" className="mt-6">
-            <AttendanceMarking onComplete={() => setActiveTab("view")} />
-          </TabsContent>
+            {/* Mark Attendance Tab */}
+            <TabsContent value="mark" className="mt-6">
+              <AttendanceMarking onComplete={() => setActiveTab("view")} />
+            </TabsContent>
 
-          {/* View Records Tab */}
-          {!isTeacher && (
-          <TabsContent value="view" className="mt-6 space-y-6">
+            {/* View Records Tab */}
+            {!isTeacher && (
+            <TabsContent value="view" className="mt-6 space-y-6">
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <Card variant="stat" className="border-l-success">
@@ -216,16 +216,16 @@ const Attendance = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Cluster</label>
-                    <Select value={filterCluster} onValueChange={setFilterCluster}>
+                    <label className="text-sm font-medium">Learning Centre</label>
+                    <Select value={filterLearningCentre} onValueChange={setFilterLearningCentre}>
                       <SelectTrigger>
-                        <SelectValue placeholder="All Clusters" />
+                        <SelectValue placeholder="All Learning Centre" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Clusters</SelectItem>
-                        {clusters?.map((cluster) => (
-                          <SelectItem key={cluster.id} value={cluster.id}>
-                            {cluster.name}
+                        <SelectItem value="all">All Learning Centre</SelectItem>
+                        {learning_centres?.map((learning_centre) => (
+                          <SelectItem key={learning_centre.id} value={String(learning_centre.id)}>
+                            {learning_centre.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -307,7 +307,7 @@ const Attendance = () => {
                                 </p>
                               </div>
                             </TableCell>
-                            <TableCell>{record.clusters?.name || "-"}</TableCell>
+                            <TableCell>{record.learning_centres?.name || "-"}</TableCell>
                             <TableCell>
                               <Badge variant="secondary">
                                 {record.programs?.name || "-"}
@@ -358,7 +358,15 @@ const Attendance = () => {
             <AttendanceReports />
           </TabsContent>
           )}
-        </Tabs>
+          </Tabs>
+        </div>
+
+        {/* Mobile: Mark Attendance Only (Teachers) */}
+        {isTeacher && (
+          <div className="sm:hidden">
+            <AttendanceMarking onComplete={() => {}} />
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

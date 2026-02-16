@@ -14,7 +14,7 @@ interface AuthContextType {
   userRole: AppRole;
   profile: { id: string; email: string; full_name: string; } | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signOut: () => void;
 }
 
@@ -55,21 +55,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   const signIn = async (email: string, password: string) => {
-    const { data } = await api.post("/Login/CheckLoginDetails", {
-      userName: email,
-      password,
-    });
+    try {
+      const { data } = await api.post("/Login/CheckLoginDetails", {
+        userName: email,
+        password,
+      });
 
-    localStorage.setItem("access_token", data.accessToken);
-    localStorage.setItem("refresh_token", data.refreshToken);
+      localStorage.setItem("access_token", data.accessToken);
+      localStorage.setItem("refresh_token", data.refreshToken);
 
-    localStorage.setItem("auth_user", JSON.stringify(data.user));
-    localStorage.setItem("auth_profile", JSON.stringify(data.userProfile));
-    localStorage.setItem("auth_role", data.user.role);
+      localStorage.setItem("auth_user", JSON.stringify(data.user));
+      localStorage.setItem("auth_profile", JSON.stringify(data.userProfile));
+      localStorage.setItem("auth_role", data.user.role);
 
-    setUser(data.user);
-    setRole(data.user.role);
-    setProfile(data.userProfile);
+      setUser(data.user);
+      setRole(data.user.role);
+      setProfile(data.userProfile);
+
+      return {};
+    } catch (error: any) {
+      return {
+        error: {
+          message: error?.response?.data?.message || error?.message || "Login failed"
+        }
+      };
+    }
   };
 
   const signOut = () => {

@@ -32,12 +32,14 @@ import {
   useAcademicYears,
   TeacherAssignment,
 } from "@/hooks/useTeachers";
+import { useLearningCentres } from "@/hooks/useLearningCentres";
 
 const assignmentSchema = z.object({
   cluster_id: z.string().min(1, "Cluster is required"),
   program_id: z.string().min(1, "Program is required"),
   academic_year_id: z.string().min(1, "Academic year is required"),
   role: z.enum(["main", "backup"]),
+  learning_centre_id: z.string().optional(),
 });
 
 type AssignmentFormValues = z.infer<typeof assignmentSchema>;
@@ -47,6 +49,7 @@ interface TeacherAssignmentDialogProps {
   onOpenChange: (open: boolean) => void;
   teacherId: string;
   assignment?: TeacherAssignment | null;
+  onSuccess?: () => void;
 }
 
 export function TeacherAssignmentDialog({
@@ -54,6 +57,7 @@ export function TeacherAssignmentDialog({
   onOpenChange,
   teacherId,
   assignment,
+  onSuccess,
 }: TeacherAssignmentDialogProps) {
   const { data: clusters } = useClusters();
   const { data: programs } = usePrograms();
@@ -68,8 +72,12 @@ export function TeacherAssignmentDialog({
       program_id: "",
       academic_year_id: "",
       role: "backup",
+      learning_centre_id: "",
     },
   });
+
+  const selectedClusterId = form.watch("cluster_id");
+  const { data: learningCentres } = useLearningCentres(selectedClusterId ? parseInt(selectedClusterId) : undefined);
 
   useEffect(() => {
     if (assignment) {
@@ -78,6 +86,7 @@ export function TeacherAssignmentDialog({
         program_id: assignment.program_id,
         academic_year_id: assignment.academic_year_id,
         role: assignment.role,
+        learning_centre_id: (assignment as any).learning_centre_id || "",
       });
     } else {
       const currentYear = academicYears?.find((y) => y.is_current);
@@ -86,6 +95,7 @@ export function TeacherAssignmentDialog({
         program_id: "",
         academic_year_id: currentYear?.id || "",
         role: "backup",
+        learning_centre_id: "",
       });
     }
   }, [assignment, academicYears, form]);
@@ -98,6 +108,7 @@ export function TeacherAssignmentDialog({
         program_id: values.program_id,
         academic_year_id: values.academic_year_id,
         role: values.role,
+        learning_centre_id: values.learning_centre_id || null,
       });
     } else {
       await createAssignment.mutateAsync({
@@ -107,11 +118,13 @@ export function TeacherAssignmentDialog({
         role: values.role,
         teacher_id: teacherId,
         is_active: true,
+        learning_centre_id: values.learning_centre_id || null,
         ...values,
       });
     }
 
     onOpenChange(false);
+    onSuccess?.();
   };
 
   return (
@@ -193,6 +206,33 @@ export function TeacherAssignmentDialog({
                           {program.name}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="learning_centre_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Learning Centre *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""} disabled={!learningCentres || learningCentres.length === 0}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select learning centre" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {learningCentres && learningCentres.length > 0 ? (
+                        learningCentres.map((centre) => (
+                          <SelectItem key={centre.id} value={String(centre.id)}>
+                            {centre.name}
+                          </SelectItem>
+                        ))
+                      ) : null}
                     </SelectContent>
                   </Select>
                   <FormMessage />

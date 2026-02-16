@@ -21,6 +21,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   MapPin,
+  School,
   AlertCircle,
   CheckCircle,
   Loader2,
@@ -40,12 +41,9 @@ import {
   useMarkAttendance,
   isWithinGeofence,
   TeacherAssignment,
-  useClusterProgramCombinations,
+  LearningCentreProgramCombinations,
 } from "@/hooks/useAttendance";
 import { useAuth } from "@/contexts/AuthContext";
-import { useClusters } from "@/hooks/useClusters";
-import { usePrograms } from "@/hooks/usePrograms";
-import { useQuery } from "@tanstack/react-query";
 
 interface AttendanceMarkingProps {
   onComplete?: () => void;
@@ -72,8 +70,8 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
   const { data: academicYear } = useCurrentAcademicYear();
   const { data: statusTypes } = useAttendanceStatusTypes();
   
-  // For admin: fetch cluster-program combinations with students
-  const { data: combinations, isLoading: combinationsLoading } = useClusterProgramCombinations(
+  // For admin: fetch learning centre-program combinations with students
+  const { data: combinations, isLoading: combinationsLoading } = LearningCentreProgramCombinations(
     isAdmin ? academicYear?.id || null : null
   );
 
@@ -82,22 +80,23 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
   // Parse selected combination for admin
   const selectedCombo = useMemo(() => {
     if (!selectedCombination || !combinations) return null;
-    return combinations.find(c => `${c.cluster_id}-${c.program_id}` === selectedCombination);
+    return combinations.find(c => `${c.learning_centre_id}-${c.program_id}` === selectedCombination);
   }, [selectedCombination, combinations]);
   
-  // Determine which cluster/program to use based on role
-  const effectiveClusterId = isAdmin ? selectedCombo?.cluster_id : currentAssignment?.cluster_id;
+  // Determine which learning centre/program to use based on role
+  const effectiveLearningCentreId = isAdmin ? selectedCombo?.learning_centre_id : currentAssignment?.learning_centre_id;
   const effectiveProgramId = isAdmin ? selectedCombo?.program_id : currentAssignment?.program_id;
   const effectiveAcademicYearId = isAdmin ? academicYear?.id : currentAssignment?.academic_year_id;
+  const effectiveClusterId = isAdmin ? selectedCombo?.cluster_id : currentAssignment?.cluster_id;
 
   const { data: students, isLoading: studentsLoading } = useStudentsForAttendance(
-    effectiveClusterId || null,
+    effectiveLearningCentreId || null,
     effectiveProgramId || null,
     effectiveAcademicYearId || null
   );
 
   const { data: existingRecords, isLoading: recordsLoading } = useAttendanceRecords(
-    effectiveClusterId || null,
+    effectiveLearningCentreId || null,
     effectiveProgramId || null,
     effectiveAcademicYearId || null,
     selectedDate
@@ -163,13 +162,13 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
   // Check if user is within geofence (admins bypass this)
   const isInGeofence = isAdmin 
     ? true 
-    : userLocation && currentAssignment?.clusters
+    : userLocation && currentAssignment?.learning_centres
       ? isWithinGeofence(
           userLocation.lat,
           userLocation.lon,
-          currentAssignment.clusters.latitude,
-          currentAssignment.clusters.longitude,
-          currentAssignment.clusters.geo_radius_meters
+          currentAssignment.learning_centres.latitude,
+          currentAssignment.learning_centres.longitude,
+          currentAssignment.learning_centres.geo_radius_meters
         )
       : false;
 
@@ -195,15 +194,16 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
   };
 
   const handleSubmit = async () => {
-    if (!effectiveClusterId || !effectiveProgramId || !effectiveAcademicYearId) return;
+    if (!effectiveLearningCentreId || !effectiveProgramId || !effectiveAcademicYearId || !effectiveClusterId) return;
     
     // For non-admins, require location
     if (!isAdmin && !userLocation) return;
 
     const records = Object.entries(attendanceMap).map(([studentId, statusId]) => ({
       student_id: studentId,
-      cluster_id: effectiveClusterId,
+      learning_centre_id: effectiveLearningCentreId,
       program_id: effectiveProgramId,
+      cluster_id: effectiveClusterId,
       academic_year_id: effectiveAcademicYearId,
       attendance_date: selectedDate,
       status_id: statusId,
@@ -249,7 +249,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>No Assignments</AlertTitle>
         <AlertDescription>
-          You don't have any active cluster/program assignments. Please contact an
+          You don't have any active learning centre/program assignments. Please contact an
           administrator.
         </AlertDescription>
       </Alert>
@@ -258,7 +258,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
 
   return (
     <div className="space-y-6">
-      {/* Admin: Date and Cluster/Program Selection */}
+      {/* Admin: Date and Learning centre/Program Selection */}
       {isAdmin && (
         <Card>
           <CardHeader>
@@ -279,19 +279,19 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Cluster & Program</label>
+                <label className="text-sm font-medium">Learning Centre & Program</label>
                 <Select value={selectedCombination} onValueChange={setSelectedCombination}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select cluster & program" />
+                    <SelectValue placeholder="Select learning centre & program" />
                   </SelectTrigger>
                   <SelectContent>
                     {combinations?.map((combo) => (
                       <SelectItem 
-                        key={`${combo.cluster_id}-${combo.program_id}`} 
-                        value={`${combo.cluster_id}-${combo.program_id}`}
+                        key={`${combo.learning_centre_id}-${combo.program_id}`} 
+                        value={`${combo.learning_centre_id}-${combo.program_id}`}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{combo.cluster_name}</span>
+                          <span className="font-medium">{combo.learning_centre_name}</span>
                           <span className="text-muted-foreground">•</span>
                           <span>{combo.program_name}</span>
                           <Badge variant="secondary" className="ml-2 text-xs">
@@ -313,7 +313,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
               {selectedCombo && (
                 <Badge variant="outline" className="gap-1">
                   <MapPin className="h-3 w-3" />
-                  {selectedCombo.cluster_city || "No location"}
+                  {selectedCombo.learning_centre_city || "No location"}
                 </Badge>
               )}
             </div>
@@ -322,7 +322,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>No Students Enrolled</AlertTitle>
                 <AlertDescription>
-                  No students are enrolled in any cluster/program for the current academic year.
+                  No students are enrolled in any learning centre/program for the current academic year.
                 </AlertDescription>
               </Alert>
             )}
@@ -356,13 +356,13 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                 <label className="text-sm font-medium">Assignment</label>
                 <Select value={selectedAssignment} onValueChange={setSelectedAssignment}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select cluster & program" />
+                    <SelectValue placeholder="Select learning centre & program" />
                   </SelectTrigger>
                   <SelectContent>
                     {assignments?.map((assignment) => (
                       <SelectItem key={assignment.id} value={assignment.id}>
                         <div className="flex items-center gap-2">
-                          <span>{assignment.clusters?.name}</span>
+                          <span>{assignment.learning_centres?.name}</span>
                           <span className="text-muted-foreground">•</span>
                           <span>{assignment.programs?.name}</span>
                           <Badge variant={assignment.role === "main" ? "default" : "outline"} className="ml-2">
@@ -380,7 +380,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <MapPin className="h-4 w-4" />
-                  {currentAssignment.clusters?.city || "N/A"}
+                  {currentAssignment.learning_centres?.city || "N/A"}
                 </div>
                 <Badge variant="info">
                   {currentAssignment.academic_years?.name}
@@ -405,10 +405,10 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Please verify your location before marking attendance.
-                  {currentAssignment?.clusters?.geo_radius_meters && (
+                  {currentAssignment?.learning_centres?.geo_radius_meters && (
                     <span className="block mt-1">
                       You must be within{" "}
-                      {currentAssignment.clusters.geo_radius_meters}m of the cluster
+                      {currentAssignment.learning_centres.geo_radius_meters}m of the learning centre
                       location.
                     </span>
                   )}
@@ -439,7 +439,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                     <CheckCircle className="h-4 w-4 text-success" />
                     <AlertTitle className="text-success">Location Verified</AlertTitle>
                     <AlertDescription>
-                      You are within the cluster's designated area. You can mark
+                      You are within the learning centre's designated area. You can mark
                       attendance.
                     </AlertDescription>
                   </Alert>
@@ -448,7 +448,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Outside Geofence</AlertTitle>
                     <AlertDescription>
-                      You are outside the cluster's designated area. Please move closer
+                      You are outside the learning centre's designated area. Please move closer
                       to mark attendance.
                     </AlertDescription>
                   </Alert>
@@ -621,7 +621,7 @@ export function AttendanceMarking({ onComplete }: AttendanceMarkingProps) {
               </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                No students enrolled in this cluster/program for the current academic
+                No students enrolled in this learning centre/program for the current academic
                 year.
               </div>
             )}

@@ -127,15 +127,36 @@ CREATE TABLE [dbo].[Clusters] (
     [ClusterID] INT IDENTITY(1,1) PRIMARY KEY,
     [Name] NVARCHAR(255) NOT NULL,
     [Address] NVARCHAR(MAX) NULL,
-    [City] NVARCHAR(100) NULL,
-    [State] NVARCHAR(100) NULL,
-    [Latitude] DECIMAL(10, 8) NULL,
-    [Longitude] DECIMAL(11, 8) NULL,
-    [GeoRadiusMeters] INT NULL DEFAULT 200,
+    [City] INT NULL,
+    [State] INT NULL,
     [IsActive] BIT NOT NULL DEFAULT 1,
     [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
 );
+GO
+
+IF NOT EXISTS (SELECT * FROM SYS.TABLES WHERE NAME = 'LearningCentres')
+BEGIN
+    CREATE TABLE [dbo].[LearningCentres] (
+        [LearningCenterID] INT IDENTITY(1,1) PRIMARY KEY,
+        [ClusterID] INT NOT NULL,
+        [Name] NVARCHAR(255) NOT NULL,
+        [Address] NVARCHAR(MAX) NULL,
+        [City] INT NULL,
+        [State] INT NULL,
+        [Latitude] DECIMAL(10, 8) NULL,
+        [Longitude] DECIMAL(11, 8) NULL,
+        [GeoRadiusMeters] INT NULL,
+		[Notes] NVARCHAR(MAX) NULL,
+        [IsActive] BIT NOT NULL DEFAULT 1,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        CONSTRAINT FK_LearningCentres_Clusters FOREIGN KEY ([ClusterID]) REFERENCES [dbo].[Clusters]([ClusterID]) ON DELETE CASCADE
+    );
+    
+    CREATE NONCLUSTERED INDEX IX_LearningCentres_ClusterID ON [dbo].[LearningCentres]([ClusterID]);
+    CREATE NONCLUSTERED INDEX IX_LearningCentres_IsActive ON [dbo].[LearningCentres]([IsActive]);
+END
 GO
 
 -- =============================================
@@ -188,6 +209,20 @@ BEGIN
 END;
 GO
 
+
+CREATE OR ALTER TRIGGER trg_LearningCentres_UpdatedAt
+ON [dbo].[LearningCentres]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE [dbo].[LearningCentres]
+    SET [UpdatedAt] = GETUTCDATE()
+    FROM [dbo].[LearningCentres] lc
+    INNER JOIN inserted i ON lc.[LearningCentreID] = i.[LearningCentreID];
+END;
+GO
+
 -- =============================================
 -- TRIGGER TO ENSURE ONLY ONE CURRENT ACADEMIC YEAR
 -- =============================================
@@ -208,6 +243,82 @@ BEGIN
     END
 END;
 GO
+
+IF NOT EXISTS (SELECT * FROM SYS.TABLES WHERE NAME = 'Subjects')
+BEGIN
+    CREATE TABLE [dbo].[Subjects] (
+        [SubjectID] INT IDENTITY(1,1) PRIMARY KEY,
+        [Name] NVARCHAR(255) NOT NULL UNIQUE,
+        [Code] NVARCHAR(50) NOT NULL UNIQUE,
+        [Description] NVARCHAR(MAX) NULL,
+        [IsActive] BIT NOT NULL DEFAULT 1,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    
+    CREATE NONCLUSTERED INDEX IX_Subjects_IsActive ON [dbo].[Subjects]([IsActive]);
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM SYS.TABLES WHERE NAME = 'SchoolTypes')
+BEGIN
+    CREATE TABLE [dbo].[SchoolTypes] (
+        [SchoolTypeID] INT IDENTITY(1,1) PRIMARY KEY,
+        [Name] NVARCHAR(255) NOT NULL UNIQUE,
+        [Code] NVARCHAR(50) NOT NULL UNIQUE,
+        [Description] NVARCHAR(MAX) NULL,
+        [IsActive] BIT NOT NULL DEFAULT 1,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    
+    CREATE NONCLUSTERED INDEX IX_SchoolTypes_IsActive ON [dbo].[SchoolTypes]([IsActive]);
+    
+    -- Insert default school types
+    INSERT INTO [dbo].[SchoolTypes] ([Name], [Code]) VALUES
+    ('Government', 'GOV'),
+    ('Aided', 'AIDED'),
+    ('Private', 'PVT'),
+    ('Unaided', 'UNAID');
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM SYS.TABLES WHERE NAME = 'Mediums')
+BEGIN
+    CREATE TABLE [dbo].[Mediums] (
+        [MediumID] INT IDENTITY(1,1) PRIMARY KEY,
+        [Name] NVARCHAR(255) NOT NULL UNIQUE,
+        [Code] NVARCHAR(50) NOT NULL UNIQUE,
+        [Description] NVARCHAR(MAX) NULL,
+        [IsActive] BIT NOT NULL DEFAULT 1,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+    );
+    
+    CREATE NONCLUSTERED INDEX IX_Mediums_IsActive ON [dbo].[Mediums]([IsActive]);
+    
+    -- Insert default mediums
+    INSERT INTO [dbo].[Mediums] ([Name], [Code]) VALUES
+    ('Kannada', 'KAN'),
+    ('English', 'ENG'),
+    ('Hindi', 'HIN'),
+    ('Marathi', 'MAR');
+END
+GO
+
+CREATE OR ALTER TRIGGER trg_Subjects_UpdatedAt
+ON [dbo].[Subjects]
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE [dbo].[Subjects]
+    SET [UpdatedAt] = GETUTCDATE()
+    FROM [dbo].[Subjects] ts
+    INNER JOIN inserted i ON ts.[SubjectID] = i.[SubjectID];
+END;
+GO
+
 
 PRINT 'Part 2: Master/Reference Tables schema created successfully';
 GO

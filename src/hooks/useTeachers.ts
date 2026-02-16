@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/api/api";
 import { toast } from "sonner";
+import { sub } from "date-fns";
 
 export interface Teacher {
   id: string;
@@ -19,6 +20,9 @@ export interface Teacher {
   created_at: string;
   updated_at: string;
   is_active: boolean;
+  subjects: string;
+  student_id?: number;
+  is_ex_student?: boolean;
 }
 
 export interface TeacherAssignment {
@@ -26,6 +30,7 @@ export interface TeacherAssignment {
   teacher_id: string;
   cluster_id: string;
   program_id: string;
+  learning_centre_id?: string;
   academic_year_id: string;
   role: "main" | "backup";
   created_at: string;
@@ -33,6 +38,7 @@ export interface TeacherAssignment {
   is_active: boolean;
   clusters?: { id: string; name: string } | null;
   programs?: { id: string; name: string } | null;
+  learning_centres?: { id: string; name: string } | null;
   academic_years?: { id: string; name: string, is_current: boolean } | null;
 }
 
@@ -40,6 +46,21 @@ export interface TeacherWithAssignments extends Teacher {
   id_proof_types?: { id: string; name: string } | null;
   teacher_assignments?: TeacherAssignment[];
 }
+
+export type StudentForExStudentLookup = {
+  id: number;
+  name: string;
+  student_code: string;
+  email?: string;
+  phone?: string;
+  date_of_birth?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  id_proof_type_id?: number;
+  id_proof_number?: string;
+  caste_category?: string;
+};
 
 const formatForDateInput = (value?: string) =>
   value ? value.split("T")[0] : "";
@@ -58,7 +79,7 @@ export const useTeachers = () => {
         } as TeacherWithAssignments;
       });
 
-      const mappedTeachers: Teacher[] = response.data.map((row: any) => ({
+      const mappedTeachers: TeacherWithAssignments[] = response.data.map((row: any) => ({
         id: String(row.id),
         name: row.name,
         email: row.email,
@@ -79,6 +100,12 @@ export const useTeachers = () => {
         created_at: row.created_at,
         updated_at: row.updated_at,
         is_active: row.is_active,
+        student_id: row.student_id,
+        is_ex_student: row.is_ex_student,
+        subjects:
+          typeof row.subjects === "string" && row.subjects.trim().length > 0
+            ? row.subjects.trim()
+            : "",
 
         id_proof_types: row.id_proof_type
           ? {
@@ -94,6 +121,7 @@ export const useTeachers = () => {
                 teacher_id: String(row.id),
                 cluster_id: String(row.cluster_id),
                 program_id: String(row.program_id),
+                learning_centre_id: row.learning_centre_id ? String(row.learning_centre_id) : undefined,
                 academic_year_id: String(row.academic_year_id),
                 role: row.role,
 
@@ -109,6 +137,10 @@ export const useTeachers = () => {
                   ? { id: String(row.program_id), name: row.program }
                   : null,
 
+                learning_centres: row.learning_centre
+                  ? { id: String(row.learning_centre_id), name: row.learning_centre }
+                  : null,
+
                 academic_years: row.academic_year_name
                   ? {
                       id: String(row.academic_year_id),
@@ -120,7 +152,6 @@ export const useTeachers = () => {
             ]
           : []
       }));
-
       return mappedTeachers;
     },
   });
@@ -154,7 +185,9 @@ export const useCreateTeacher = () => {
         dob: teacher.dob || null,
         notes: teacher.notes || null,
         id_proof_type_id: teacher.id_proof_type_id ? parseInt(teacher.id_proof_type_id, 10) : null,
-        id_proof_number: teacher.id_proof_number
+        id_proof_number: teacher.id_proof_number,
+        subjects: teacher.subjects,
+        student_id: teacher.student_id
       };
 
       const response = await api.post("/Teachers", payload);
@@ -172,7 +205,6 @@ export const useCreateTeacher = () => {
 
 export const useUpdateTeacher = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       id,
@@ -186,6 +218,7 @@ export const useUpdateTeacher = () => {
       toast.success("Teacher updated successfully");
     },
     onError: (error: any) => {
+      console.error("Update Teacher Error:", error);
       toast.error("Failed to update teacher: " + (error?.response?.data?.message || error.message));
     },
   });
@@ -330,3 +363,15 @@ export const useIdProofTypes = () => {
     },
   });
 };
+
+export const useStudentByCode = (studentCode: string | null) => {
+  return useQuery({
+    queryKey: ["student-by-code", studentCode],
+    queryFn: async () => {
+      const response = await api.get(`/Teachers/ExStudent/${studentCode}`);
+      return response.data as StudentForExStudentLookup;
+    },
+    enabled: !!studentCode && studentCode.length > 0,
+  });
+};
+

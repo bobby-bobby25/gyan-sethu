@@ -11,7 +11,6 @@ import {
   Eye,
   Edit,
   Trash2,
-  ArrowRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -242,22 +241,6 @@ const Programs = () => {
                         No clusters assigned yet
                       </p>
                     )}
-
-                    {/* Primary Action */}
-                    <div className="flex items-center justify-end mt-3 pt-3 border-t">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="gap-1.5 h-8 text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleView(program);
-                        }}
-                      >
-                        View Details
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </div>
                   </CardContent>
                 </Card>
               );

@@ -74,7 +74,7 @@ export function ClustersNeedingAttentionTable({ data, isLoading, onExport }: Clu
           <AlertTriangle className="h-4 w-4 text-warning" />
           Students Needing Attention
         </CardTitle>
-        <Button variant="ghost" size="sm" onClick={onExport} className="h-6 text-xs text-muted-foreground">
+        <Button variant="ghost" size="sm" onClick={onExport} className="h-6 text-[10px] text-muted-foreground">
           <Download className="h-3 w-3 mr-1" />
           Export
         </Button>

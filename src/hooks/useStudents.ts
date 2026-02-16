@@ -23,6 +23,9 @@ export interface Student {
   created_at: string;
   updated_at: string;
   is_active: boolean;
+  school_type_id?: number | null;
+  medium_id?: number | null;
+  sibling_student_code?: string | null;
 }
 
 export interface StudentInsert {
@@ -41,6 +44,7 @@ export interface StudentInsert {
   id_proof_type_id?: string;
   id_proof_number?: string;
   address?: string;
+  sibling_student_code?: string | null;
 }
 
 export interface StudentUpdate extends Partial<StudentInsert> {}
@@ -57,6 +61,8 @@ export interface StudentWithDetails extends Student {
     school_name: string | null;
     attendance_percentage: number | null;
     result_percentage: number | null;
+    school_type_id?: number | null;
+    medium_id?: number | null;
     clusters?: { name: string } | null;
     programs?: { name: string } | null;
     academic_years?: { name: string; is_current: boolean } | null;
@@ -86,7 +92,7 @@ export function useStudents(filters?: StudentFilters) {
 
         const response = await api.get(`/Students${params.toString() ? '?' + params.toString() : ''}`);
 
-        const mappedStudents: Student[] = response.data.map((row: any) => ({
+        const mappedStudents: StudentWithDetails[] = response.data.map((row: any) => ({
           id: String(row.id),
           name: row.name,
           student_code: row.student_code,
@@ -115,6 +121,9 @@ export function useStudents(filters?: StudentFilters) {
           created_at: row.created_at,
           updated_at: row.updated_at,
           is_active: row.is_active,
+          school_type_id: row.school_type_id,
+          medium_id: row.medium_id,
+          sibling_student_code: row.sibling_student_code,
 
           caste_categories: row.caste_category
             ? { name: row.caste_category }
@@ -135,7 +144,9 @@ export function useStudents(filters?: StudentFilters) {
                 school_name: row.school_name,
                 attendance_percentage: row.attendance_percentage,
                 result_percentage: row.result_percentage,
-
+                school_type_id: row.school_type_id,
+                medium_id: row.medium_id,
+                
                 clusters: row.cluster
                   ? { name: row.cluster }
                   : null,
@@ -154,7 +165,36 @@ export function useStudents(filters?: StudentFilters) {
             : null
         }));
 
-        return mappedStudents;
+        // Filter to keep only the current academic record for each student
+        // When a student has multiple records, keep only the one where is_current = true
+        const uniqueStudents = mappedStudents.reduce((acc, student) => {
+          const existingIndex = acc.findIndex(s => s.id === student.id);
+          
+          if (existingIndex === -1) {
+            // New student, add it
+            acc.push(student);
+          } else {
+            // Student already exists, keep the one with current academic record
+            const existing = acc[existingIndex];
+            const existingIsCurrent = existing.current_academic_record?.academic_years?.is_current ?? false;
+            const newIsCurrent = student.current_academic_record?.academic_years?.is_current ?? false;
+            
+            if (newIsCurrent && !existingIsCurrent) {
+              // Replace with the current year record
+              acc[existingIndex] = student;
+            } else if (!newIsCurrent && !existingIsCurrent) {
+              // Both are non-current, keep the first one
+              // (no change needed)
+            } else if (newIsCurrent && existingIsCurrent) {
+              // Both are current (shouldn't happen), keep the first one
+              // (no change needed)
+            }
+          }
+          
+          return acc;
+        }, [] as StudentWithDetails[]);
+
+        return uniqueStudents;
         // return response.data as StudentWithDetails[];
       } catch (error) {
         throw error;
@@ -237,7 +277,6 @@ export function useUpdateStudentPhoto() {
   });
 }
 
-
 export function useDeleteStudent() {
   const queryClient = useQueryClient();
 
@@ -254,6 +293,22 @@ export function useDeleteStudent() {
     },
   });
 }
+
+export const useUpdateStudentActiveStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, isActive }: { studentId: number; isActive: boolean }) => {
+      await api.patch(`/Students/${studentId}/ActiveStatus`, {
+        is_active: isActive,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      toast.success("Student status updated successfully");
+    },
+    onError: (error: any) => toast.error("Failed to update student status"),
+  });
+};
 
 // Lookup data hooks
 export function useClusters() {

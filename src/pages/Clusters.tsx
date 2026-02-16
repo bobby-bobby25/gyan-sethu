@@ -19,7 +19,6 @@ import {
   MoreHorizontal,
   Edit,
   Eye,
-  Navigation,
   Trash2,
 } from "lucide-react";
 import {
@@ -102,8 +101,8 @@ const Clusters = () => {
                 <TableHead className="font-bold text-foreground">Location</TableHead>
                 <TableHead className="font-bold text-center text-foreground">Students</TableHead>
                 <TableHead className="font-bold text-center text-foreground">Teachers</TableHead>
+                <TableHead className="font-bold text-center text-foreground">Learning Centres</TableHead>
                 <TableHead className="font-bold text-foreground">Programs</TableHead>
-                <TableHead className="font-bold text-foreground">Geo-fence</TableHead>
                 <TableHead className="font-bold text-center text-foreground">Status</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
@@ -116,15 +115,15 @@ const Clusters = () => {
                     <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                     <TableCell className="text-center"><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
                     <TableCell className="text-center"><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
+                    <TableCell className="text-center"><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                     <TableCell className="text-center"><Skeleton className="h-5 w-16 mx-auto" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-5" /></TableCell>
                   </TableRow>
                 ))
               ) : filteredClusters.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-40">
+                  <TableCell colSpan={7} className="h-40">
                     <div className="text-center">
                       <MapPin className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
                       <h3 className="text-base font-medium">No clusters found</h3>
@@ -150,7 +149,7 @@ const Clusters = () => {
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div
+                        {/* <div
                           className={`w-8 h-8 rounded-md flex items-center justify-center ${
                             cluster.is_active ? "bg-primary/10" : "bg-muted"
                           }`}
@@ -160,7 +159,7 @@ const Clusters = () => {
                               cluster.is_active ? "text-primary" : "text-muted-foreground"
                             }`}
                           />
-                        </div>
+                        </div> */}
                         <span className="font-medium">{cluster.name}</span>
                       </div>
                     </TableCell>
@@ -172,6 +171,9 @@ const Clusters = () => {
                     </TableCell>
                     <TableCell className="text-center font-medium">
                       {cluster.teacher_count}
+                    </TableCell>
+                    <TableCell className="text-center font-medium">
+                      {cluster.learning_centre_count || 0}
                     </TableCell>
                     <TableCell>
                         {Array.isArray(cluster.programs) && cluster.programs.length > 0 ? (
@@ -190,14 +192,6 @@ const Clusters = () => {
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Navigation className="h-3.5 w-3.5" />
-                        {cluster.latitude && cluster.longitude
-                          ? `${cluster.geo_radius_meters || 200}m`
-                          : "Not set"}
-                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={cluster.is_active ? "success" : "secondary"}>

@@ -8,6 +8,7 @@ export interface AcademicRecord {
   academic_year_id: string;
   cluster_id: string;
   program_id: string;
+  learning_centre_id: string;
   class_grade?: string | null;
   school_name?: string | null;
   attendance_percentage?: number | null;
@@ -21,6 +22,7 @@ export interface AcademicRecordInsert {
   student_id: string;
   cluster_id: string;
   program_id: string;
+  learning_centre_id: string;
   academic_year_id: string;
   class_grade?: string | null;
   school_name?: string | null;
@@ -35,6 +37,7 @@ export interface AcademicRecordUpdate extends Partial<AcademicRecordInsert> {}
 export interface AcademicRecordWithDetails extends AcademicRecord {
   clusters?: { id: string; name: string } | null;
   programs?: { id: string; name: string } | null;
+  learningCentres?: { id: string; name: string } | null;
   academic_years?: { id: string; name: string; is_current: boolean } | null;
 }
 
@@ -51,6 +54,7 @@ export function useStudentAcademicRecords(studentId: string | null) {
         academic_year_id: String(row.academic_year_id),
         cluster_id: String(row.cluster_id),
         program_id: String(row.program_id),
+        learning_centre_id: String(row.learning_centre_id),
 
         class_grade: row.class_grade,
         school_name: row.school_name,
@@ -66,6 +70,10 @@ export function useStudentAcademicRecords(studentId: string | null) {
 
         programs: row.program_id
           ? { id: String(row.program_id), name: row.program_name }
+          : null,
+
+        learningCentres: row.learning_centre_id
+          ? { id: String(row.learning_centre_id), name: row.learning_centre_name }
           : null,
 
         academic_years: row.academic_year_id

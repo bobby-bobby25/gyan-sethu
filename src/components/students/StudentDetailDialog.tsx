@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,14 +33,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
-  Plus, MoreHorizontal, Edit, Trash2, Loader2, MapPin, 
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, MapPin, School,
   GraduationCap, Users, IndianRupee, Briefcase, Phone, 
-  FileText, Upload, Download, File, ExternalLink, Calendar
+  FileText, Upload, Download, File, ExternalLink, Calendar, Heart, UserCheck
 } from "lucide-react";
 import { useStudentAcademicRecords, useDeleteAcademicRecord, type AcademicRecordWithDetails } from "@/hooks/useAcademicRecords";
 import { useFamilyMembers, useDeleteFamilyMember, type FamilyMemberWithDetails } from "@/hooks/useFamilyMembers";
 import { useDocumentsByReference, useUploadDocument, useDeleteDocument, useDownloadDocument, useDocumentUrl, type Document } from "@/hooks/useDocuments";
-import { useStudents, type StudentWithDetails } from "@/hooks/useStudents";
+import { useStudents, type StudentWithDetails, useUpdateStudentActiveStatus } from "@/hooks/useStudents";
 import { AcademicRecordFormDialog } from "./AcademicRecordFormDialog";
 import { FamilyMemberFormDialog } from "./FamilyMemberFormDialog";
 import { format } from "date-fns";
@@ -82,6 +83,7 @@ export function StudentDetailDialog({ open, onOpenChange, student }: StudentDeta
   const { data: academicRecords, isLoading: recordsLoading } = useStudentAcademicRecords(student?.id || null);
   const { data: familyMembers, isLoading: membersLoading } = useFamilyMembers(student?.id || null);
   const { data: documents, isLoading: docsLoading } = useDocumentsByReference('Student', student?.id ? parseInt(student.id) : null);
+  const updateStudentActiveStatus = useUpdateStudentActiveStatus();
   const deleteRecord = useDeleteAcademicRecord();
   const deleteMember = useDeleteFamilyMember();
   const uploadFile = useUploadDocument();
@@ -227,29 +229,83 @@ export function StudentDetailDialog({ open, onOpenChange, student }: StudentDeta
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogTitle className="sr-only">Student Details - {student.name}</DialogTitle>
           {/* Minimal Student Context - Metadata bar */}
-          <div className="px-5 py-2.5 border-b flex items-center gap-2.5 text-sm">
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={s.photo_url || undefined} />
-              <AvatarFallback className="bg-muted text-xs">
-                {student.name?.charAt(0)?.toUpperCase() || "S"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-foreground">{student.name}</span>
-            <span className="text-muted-foreground/50">•</span>
-            <span className="font-mono text-xs text-muted-foreground">
-              {student.student_code || student.id.slice(0, 8)}
-            </span>
-            {(s.city || currentRecord?.clusters?.name) && (
-              <>
-                <span className="text-muted-foreground/50">•</span>
-                <span className="text-muted-foreground text-xs flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {currentRecord?.clusters?.name || [s.city, s.state].filter(Boolean).join(", ")}
-                </span>
-              </>
-            )}
+          <div className="px-5 py-2.5 border-b flex items-center justify-between pr-12">
+            {/* LEFT CONTENT */}
+            <div className="flex items-center gap-3 text-sm min-w-0">
+              <Avatar className="h-7 w-7 shrink-0">
+                <AvatarImage src={s.photo_url || undefined} />
+                <AvatarFallback className="bg-muted text-xs">
+                  {student.name?.charAt(0)?.toUpperCase() || "S"}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* TEXT BLOCK */}
+              <div className="flex flex-col min-w-0">
+                {/* Name + Status */}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground truncate">
+                    {student.name}
+                  </span>
+
+                  {!s.is_active && (
+                    <Badge
+                      variant="secondary"
+                      className="h-5 px-1.5 text-[10px] leading-none"
+                    >
+                      Inactive
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Meta row */}
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground leading-none">
+                  <span className="font-mono">
+                    {student.student_code || student.id.slice(0, 8)}
+                  </span>
+
+                  {(s.city || currentRecord?.clusters?.name) && (
+                    <>
+                      <span className="opacity-40">•</span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {currentRecord?.clusters?.name ||
+                          [s.city, s.state].filter(Boolean).join(", ")}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT BUTTON */}
+            <Button
+              size="sm"
+              variant={s.is_active ? "outline" : "secondary"}
+              onClick={() => {
+                updateStudentActiveStatus.mutate(
+                  {
+                    studentId: parseInt(student.id),
+                    isActive: !s.is_active
+                  },
+                  {
+                    onSuccess: () => {
+                      onOpenChange(false);
+                    }
+                  }
+                );
+              }}
+              disabled={updateStudentActiveStatus.isPending}
+              className="gap-1 ml-4"
+            >
+              {updateStudentActiveStatus.isPending && (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              )}
+              {s.is_active ? "Mark Inactive" : "Mark Active"}
+            </Button>
           </div>
+
 
           {/* Section Navigation */}
           <div className="px-5 pt-4 pb-3 flex items-center gap-6 border-b">

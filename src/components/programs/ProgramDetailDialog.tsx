@@ -19,7 +19,7 @@ import {
   useProgramClusters,
   useProgramStudents,
 } from "@/hooks/usePrograms";
-import { BookOpen, MapPin, Users, GraduationCap } from "lucide-react";
+import { BookOpen, MapPin, School, Users, GraduationCap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProgramDetailDialogProps {
@@ -152,8 +152,8 @@ const ProgramDetailDialog = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {students.map((record) => (
-                        <TableRow key={record.id}>
+                      {students.map((record, index) => (
+                          <TableRow key={record.id}>
                           <TableCell className="font-mono text-sm">
                             {(record.students as { student_code: string })?.student_code}
                           </TableCell>

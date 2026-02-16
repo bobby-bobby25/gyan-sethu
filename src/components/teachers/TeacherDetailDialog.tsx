@@ -95,6 +95,8 @@ export function TeacherDetailDialog({
       await deleteAssignment.mutateAsync(assignmentToDelete.id);
       setDeleteDialogOpen(false);
       setAssignmentToDelete(null);
+      setAssignmentDialogOpen(false);
+      onOpenChange(false);
     }
   };
 
@@ -339,6 +341,7 @@ export function TeacherDetailDialog({
         onOpenChange={setAssignmentDialogOpen}
         teacherId={teacher.id}
         assignment={selectedAssignment}
+        onSuccess={() => onOpenChange(false)}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -78,7 +78,7 @@ export const useProgramStudents = (programId: string | null) => {
       const response = await api.get(`/Programs/${programId}/Students`);
       const mappedStudents = response.data.map((row: any) => ({
         id: String(row.id),
-
+        
         students: {
           id: String(row.student_id ?? row.id),
           name: row.student_name ?? row.name,

@@ -65,8 +65,9 @@ const ClusterDetailDialog = ({
 
         <div className="space-y-6">
           {/* Cluster Info */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-3 rounded-lg bg-muted/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Status – small */}
+            <div className="p-3 rounded-lg bg-muted/50 md:col-span-1">
               <div className="text-xs text-muted-foreground">Status</div>
               <Badge
                 variant={cluster.is_active ? "default" : "secondary"}
@@ -75,39 +76,25 @@ const ClusterDetailDialog = ({
                 {cluster.is_active ? "Active" : "Inactive"}
               </Badge>
             </div>
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <Navigation className="h-3 w-3" /> Geo Radius
+
+            {/* Address – wider */}
+            {cluster.address && (
+              <div className="p-3 rounded-lg bg-muted/50 md:col-span-2">
+                <div className="text-xs text-muted-foreground">Full Address</div>
+                <div className="mt-1 text-sm leading-relaxed">
+                  {cluster.address}
+                </div>
               </div>
-              <div className="font-semibold mt-1">
-                {cluster.geo_radius_meters || 200}m
-              </div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground">Latitude</div>
-              <div className="font-semibold mt-1">
-                {cluster.latitude?.toFixed(6) || "Not set"}
-              </div>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground">Longitude</div>
-              <div className="font-semibold mt-1">
-                {cluster.longitude?.toFixed(6) || "Not set"}
-              </div>
-            </div>
+            )}
           </div>
 
-          {cluster.address && (
-            <div className="p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground">Full Address</div>
-              <div className="mt-1">{cluster.address}</div>
-            </div>
-          )}
-
+          {/* Notes full width below */}
           {(cluster as any).notes && (
-            <div className="p-3 rounded-lg bg-muted/50">
+            <div className="mt-4 p-3 rounded-lg bg-muted/50">
               <div className="text-xs text-muted-foreground">Notes</div>
-              <div className="mt-1 text-sm">{(cluster as any).notes}</div>
+              <div className="mt-1 text-sm leading-relaxed">
+                {(cluster as any).notes}
+              </div>
             </div>
           )}
 

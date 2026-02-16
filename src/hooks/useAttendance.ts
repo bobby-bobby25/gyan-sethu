@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/api/api";
 import { toast } from "sonner";
+import cluster from "cluster";
 
 export interface AttendanceRecord {
   id: string;
   student_id: string;
-  cluster_id: string;
+  learning_centre_id: string;
   program_id: string;
+  cluster_id: string;
   academic_year_id: string;
   attendance_date: string;
   status_id: string;
@@ -16,6 +18,7 @@ export interface AttendanceRecord {
   updated_at: string;
   students?: { id: string; name: string } | null;
   clusters?: { id: string; name: string } | null;
+  learning_centres?: { id: string; name: string } | null;
   programs?: { id: string; name: string } | null;
   attendance_status_types?: { id: string; name: string; code: string } | null;
   teachers?: { id: string; name: string } | null;
@@ -24,20 +27,22 @@ export interface AttendanceRecord {
 export interface TeacherAssignment {
   id: string;
   teacher_id: string;
-  cluster_id: string;
+  learning_centre_id: string;
   program_id: string;
+  cluster_id: string;
   academic_year_id: string;
   role: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  clusters?: { id: string; 
+  learning_centres?: { id: string; 
                name: string, 
                latitude:number; 
                longitude:number; 
                geo_radius_meters: number 
                city: string | null} | null;
   programs?: { id: string; name: string } | null;
+  clusters?: { id: string; name: string } | null;
   academic_years?: { id: string; name: string } | null;
 }
 
@@ -79,44 +84,45 @@ export const useCurrentTeacher = (userId: string | null) => {
 
 // Get students enrolled in a specific cluster/program for current academic year
 export const useStudentsForAttendance = (
-  clusterId: string | null,
+  learningCentreId: string | null,
   programId: string | null,
   academicYearId: string | null
 ) => {
   return useQuery({
-    queryKey: ["students-for-attendance", clusterId, programId, academicYearId],
+    queryKey: ["students-for-attendance", learningCentreId, programId, academicYearId],
     queryFn: async () => {
-      if (!clusterId || !programId || !academicYearId) return [];
+      if (!learningCentreId || !programId || !academicYearId) return [];
       const response = await api.get(
-        `/Attendance/Students?clusterId=${clusterId}&programId=${programId}&academicYearId=${academicYearId}`
+        `/Attendance/Students?learningCentreId=${learningCentreId}&programId=${programId}&academicYearId=${academicYearId}`
       );
       return response.data as StudentForAttendance[];
     },
-    enabled: !!clusterId && !!programId && !!academicYearId,
+    enabled: !!learningCentreId && !!programId && !!academicYearId,
   });
 };
 
 // Get existing attendance records for a date
 export const useAttendanceRecords = (
-  clusterId: string | null,
+  learningCentreId: string | null,
   programId: string | null,
   academicYearId: string | null,
   date: string
 ) => {
   return useQuery({
-    queryKey: ["attendance-records", clusterId, programId, academicYearId, date],
+    queryKey: ["attendance-records", learningCentreId, programId, academicYearId, date],
     queryFn: async () => {
-      if (!clusterId || !programId || !academicYearId || !date) return [];
+      if (!learningCentreId || !programId || !academicYearId || !date) return [];
       const response = await api.get(
-        `/Attendance?clusterId=${clusterId}&programId=${programId}&academicYearId=${academicYearId}&fromDate=${date}&toDate=${date}`
+        `/Attendance?learningCentreId=${learningCentreId}&programId=${programId}&academicYearId=${academicYearId}&fromDate=${date}&toDate=${date}`
       );
 
       const mappedRecords: AttendanceRecord[] = response.data.map((row: any) => ({
         id: String(row.attendance_record_id),
 
         student_id: String(row.student_id),
-        cluster_id: String(row.cluster_id),
+        learning_centre_id: String(row.learning_centre_id),
         program_id: String(row.program_id),
+        cluster_id: String(row.cluster_id),
         academic_year_id: String(row.academic_year_id),
 
         attendance_date: row.attendance_date,
@@ -141,6 +147,13 @@ export const useAttendanceRecords = (
           ? {
               id: String(row.cluster_id),
               name: row.cluster_name
+            }
+          : null,
+
+        learning_centres: row.learning_centre_id
+          ? {
+              id: String(row.learning_centre_id),
+              name: row.learning_centre_name
             }
           : null,
 
@@ -169,22 +182,22 @@ export const useAttendanceRecords = (
 
       return mappedRecords;
     },
-    enabled: !!clusterId && !!programId && !!academicYearId,
+    enabled: !!learningCentreId && !!programId && !!academicYearId,
   });
 };
 
 // Get all attendance records with filters
 export const useAllAttendanceRecords = (
   date: string,
-  clusterId?: string,
+  learningCentreId?: string,
   programId?: string,
   statusId?: string
 ) => {
   return useQuery({
-    queryKey: ["all-attendance-records", date, clusterId, programId, statusId],
+    queryKey: ["all-attendance-records", date, learningCentreId, programId, statusId],
     queryFn: async () => {
       const params = new URLSearchParams({ date });
-      if (clusterId && clusterId !== "all") params.append("clusterId", clusterId);
+      if (learningCentreId && learningCentreId !== "all") params.append("learningCentreId", learningCentreId);
       if (programId && programId !== "all") params.append("programId", programId);
       if (statusId && statusId !== "all") params.append("statusId", statusId);
       if (date && date !== null) params.append("fromDate", date);
@@ -196,8 +209,9 @@ export const useAllAttendanceRecords = (
         id: String(row.attendance_record_id),
 
         student_id: String(row.student_id),
-        cluster_id: String(row.cluster_id),
+        learning_centre_id: String(row.learning_centre_id),
         program_id: String(row.program_id),
+        cluster_id: String(row.cluster_id),
         academic_year_id: String(row.academic_year_id),
 
         attendance_date: row.attendance_date,
@@ -217,11 +231,18 @@ export const useAllAttendanceRecords = (
               name: row.student_name
             }
           : null,
-
+        
         clusters: row.cluster_id
           ? {
               id: String(row.cluster_id),
               name: row.cluster_name
+            }
+          : null,
+
+        learning_centres: row.learning_centre_id
+          ? {
+              id: String(row.learning_centre_id),
+              name: row.learning_centre_name
             }
           : null,
 
@@ -289,8 +310,9 @@ export const useMarkAttendance = () => {
     mutationFn: async (
       records: Array<{
         student_id: string;
-        cluster_id: string;
+        learning_centre_id: string;
         program_id: string;
+        cluster_id: string;
         academic_year_id: string;
         attendance_date: string;
         status_id: string;
@@ -337,24 +359,24 @@ export const calculateDistance = (
 export const isWithinGeofence = (
   userLat: number,
   userLon: number,
-  clusterLat: number | null,
-  clusterLon: number | null,
+  learningCentreLat: number | null,
+  learningCentreLon: number | null,
   radiusMeters: number | null
 ): boolean => {
-  if (!clusterLat || !clusterLon) return true; // No geofence set
+  if (!learningCentreLat || !learningCentreLon) return true; // No geofence set
   const radius = radiusMeters || 200; // Default 200m
-  const distance = calculateDistance(userLat, userLon, clusterLat, clusterLon);
+  const distance = calculateDistance(userLat, userLon, learningCentreLat, learningCentreLon);
   return distance <= radius;
 };
 
-export function useClusterProgramCombinations(academicYearId: string | null) {
+export function LearningCentreProgramCombinations(academicYearId: string | null) {
   return useQuery({
-    queryKey: ["cluster-program-combinations", academicYearId],
+    queryKey: ["learningcentre-program-combinations", academicYearId],
     queryFn: async () => {
       if (!academicYearId) return [];
 
       const response = await api.get(
-        `/Dashboard/ClusterProgramCombinations`,
+        `/Dashboard/LearningCentreProgramCombinations`,
         { params: { academicYearId } }
       );
       return response.data;

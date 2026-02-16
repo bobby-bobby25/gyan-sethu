@@ -34,6 +34,18 @@ import {
   useCreateCity,
   useUpdateCity,
   useDeleteCity,
+  useTeacherSubjects,
+  useCreateTeacherSubject,
+  useUpdateTeacherSubject,
+  useDeleteTeacherSubject,
+  useSchoolTypes,
+  useCreateSchoolType,
+  useUpdateSchoolType,
+  useDeleteSchoolType,
+  useStudentMediums,
+  useCreateStudentMedium,
+  useUpdateStudentMedium,
+  useDeleteStudentMedium,
 } from "@/hooks/useMasterData";
 
 type MasterDataItem = {
@@ -331,6 +343,45 @@ const MasterDataManagement = () => {
     code: city.state,
   }));
 
+  // Teacher Subjects
+  const { data: teacherSubjects, isLoading: loadingTeacherSubjects } = useTeacherSubjects();
+  const createTeacherSubject = useCreateTeacherSubject();
+  const updateTeacherSubject = useUpdateTeacherSubject();
+  const deleteTeacherSubject = useDeleteTeacherSubject();
+
+  // Transform teacher subjects to convert id to string
+  const teacherSubjectsWithStringId = teacherSubjects?.map(subject => ({
+    id: subject.id.toString(),
+    name: subject.name,
+    code: subject.code,
+  }));
+
+  // School Types
+  const { data: schoolTypes, isLoading: loadingSchoolTypes } = useSchoolTypes();
+  const createSchoolType = useCreateSchoolType();
+  const updateSchoolType = useUpdateSchoolType();
+  const deleteSchoolType = useDeleteSchoolType();
+
+  // Transform school types to convert id to string
+  const schoolTypesWithStringId = schoolTypes?.map(type => ({
+    id: type.id.toString(),
+    name: type.name,
+    code: type.code,
+  }));
+
+  // Student Mediums
+  const { data: studentMediums, isLoading: loadingStudentMediums } = useStudentMediums();
+  const createStudentMedium = useCreateStudentMedium();
+  const updateStudentMedium = useUpdateStudentMedium();
+  const deleteStudentMedium = useDeleteStudentMedium();
+
+  // Transform student mediums to convert id to string
+  const studentMediumsWithStringId = studentMediums?.map(medium => ({
+    id: medium.id.toString(),
+    name: medium.name,
+    code: medium.code,
+  }));
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <MasterDataCard
@@ -472,6 +523,66 @@ const MasterDataManagement = () => {
         isCreating={createCity.isPending}
         isUpdating={updateCity.isPending}
         isDeleting={deleteCity.isPending}
+      />
+
+      <MasterDataCard
+        title="Teacher Subjects"
+        description="Subjects taught by teachers"
+        items={teacherSubjectsWithStringId}
+        isLoading={loadingTeacherSubjects}
+        hasCode={true}
+        onCreate={async (name, code) => {
+          await createTeacherSubject.mutateAsync({ name, code: code || name.toUpperCase().slice(0, 3) });
+        }}
+        onUpdate={async (id, name, code) => {
+          await updateTeacherSubject.mutateAsync({ id: parseInt(id), name, code: code || name.toUpperCase().slice(0, 3) });
+        }}
+        onDelete={async (id) => {
+          await deleteTeacherSubject.mutateAsync(parseInt(id));
+        }}
+        isCreating={createTeacherSubject.isPending}
+        isUpdating={updateTeacherSubject.isPending}
+        isDeleting={deleteTeacherSubject.isPending}
+      />
+
+      <MasterDataCard
+        title="School Types"
+        description="Type of educational institution"
+        items={schoolTypesWithStringId}
+        isLoading={loadingSchoolTypes}
+        hasCode={true}
+        onCreate={async (name, code) => {
+          await createSchoolType.mutateAsync({ name, code: code || name.toUpperCase().slice(0, 3) });
+        }}
+        onUpdate={async (id, name, code) => {
+          await updateSchoolType.mutateAsync({ id: parseInt(id), name, code: code || name.toUpperCase().slice(0, 3) });
+        }}
+        onDelete={async (id) => {
+          await deleteSchoolType.mutateAsync(parseInt(id));
+        }}
+        isCreating={createSchoolType.isPending}
+        isUpdating={updateSchoolType.isPending}
+        isDeleting={deleteSchoolType.isPending}
+      />
+
+      <MasterDataCard
+        title="Student Mediums"
+        description="Language/medium of instruction"
+        items={studentMediumsWithStringId}
+        isLoading={loadingStudentMediums}
+        hasCode={true}
+        onCreate={async (name, code) => {
+          await createStudentMedium.mutateAsync({ name, code: code || name.toUpperCase().slice(0, 3) });
+        }}
+        onUpdate={async (id, name, code) => {
+          await updateStudentMedium.mutateAsync({ id: parseInt(id), name, code: code || name.toUpperCase().slice(0, 3) });
+        }}
+        onDelete={async (id) => {
+          await deleteStudentMedium.mutateAsync(parseInt(id));
+        }}
+        isCreating={createStudentMedium.isPending}
+        isUpdating={updateStudentMedium.isPending}
+        isDeleting={deleteStudentMedium.isPending}
       />
     </div>
   );

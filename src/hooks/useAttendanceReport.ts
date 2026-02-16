@@ -8,17 +8,19 @@ export type AttendanceReportData = {
   status_name: string;
   student_name: string;
   student_code: string;
-  cluster_id: string;
-  cluster_name: string;
+  learning_centre_id: string;
+  learning_centre_name: string;
   program_id: string;
   program_name: string;
+  cluster_id: string;
+  cluster_name: string;
   teacher_name: string | null;
   marked_at: string | null;
 };
 
-export type ClusterStats = {
-  cluster_id: string;
-  cluster_name: string;
+export type learningCentreStats = {
+  learning_centre_id: string;
+  learning_centre_name: string;
   present: number;
   absent: number;
   total: number;
@@ -45,18 +47,18 @@ export type DailyStats = {
 export const useAttendanceReport = (
   startDate: string,
   endDate: string,
-  clusterId?: string,
+  learningCentreId?: string,
   programId?: string
 ) => {
   return useQuery({
-    queryKey: ["attendance-report", startDate, endDate, clusterId, programId],
+    queryKey: ["attendance-report", startDate, endDate, learningCentreId, programId],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate,
         endDate,
       });
 
-      if (clusterId && clusterId !== "all") params.append("clusterId", clusterId);
+      if (learningCentreId && learningCentreId !== "all") params.append("learningCentreId", learningCentreId);
       if (programId && programId !== "all") params.append("programId", programId);
 
       const response = await api.get(`/Reports/Attendance?${params.toString()}`);
@@ -70,22 +72,24 @@ export const useAttendanceReport = (
         status_name: r.status_name || "",
         student_name: r.student_name || "",
         student_code: r.student_code || "",
-        cluster_id: String(r.cluster_id),
-        cluster_name: r.cluster_name || "",
+        learning_centre_id: String(r.learning_centre_id),
+        learning_centre_name: r.learning_centre_name || "",
         program_id: String(r.program_id),
         program_name: r.program_name || "",
+        cluster_id: String(r.cluster_id),
+        cluster_name: r.cluster_name || "",
         teacher_name: r.teacher_name ?? null,
         marked_at: r.marked_at,
       }));
 
-      /* ---------------- CLUSTER STATS ---------------- */
-      const clusterMap = new Map<string, ClusterStats>();
+      /* ---------------- LEARNING CENTRE STATS ---------------- */
+      const learningCentreMap = new Map<string, learningCentreStats>();
 
       records.forEach((r) => {
-        if (!clusterMap.has(r.cluster_id)) {
-          clusterMap.set(r.cluster_id, {
-            cluster_id: r.cluster_id,
-            cluster_name: r.cluster_name,
+        if (!learningCentreMap.has(r.learning_centre_id)) {
+          learningCentreMap.set(r.learning_centre_id, {
+            learning_centre_id: r.learning_centre_id,
+            learning_centre_name: r.learning_centre_name,
             present: 0,
             absent: 0,
             total: 0,
@@ -93,12 +97,12 @@ export const useAttendanceReport = (
           });
         }
 
-        const stats = clusterMap.get(r.cluster_id)!;
+        const stats = learningCentreMap.get(r.learning_centre_id)!;
         stats.total++;
         r.status_code === "P" ? stats.present++ : stats.absent++;
       });
 
-      clusterMap.forEach((stats) => {
+      learningCentreMap.forEach((stats) => {
         stats.rate = stats.total > 0 ? (stats.present / stats.total) * 100 : 0;
       });
 
@@ -157,7 +161,7 @@ export const useAttendanceReport = (
 
       return {
         records,
-        clusterStats: Array.from(clusterMap.values()).sort((a, b) => b.rate - a.rate),
+        learningCentreStats: Array.from(learningCentreMap.values()).sort((a, b) => b.rate - a.rate),
         programStats: Array.from(programMap.values()).sort((a, b) => b.rate - a.rate),
         dailyStats: Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
         overallStats: { present, absent, total, rate },
@@ -176,8 +180,9 @@ export const exportToCSV = (
     "Date",
     "Student Name",
     "Student Code",
-    "Cluster",
+    "Learning Centre",
     "Program",
+    "Cluster",
     "Status",
     "Marked By",
     "Marked At",
@@ -187,8 +192,9 @@ export const exportToCSV = (
     r.attendance_date,
     r.student_name,
     r.student_code,
-    r.cluster_name,
+    r.learning_centre_name,
     r.program_name,
+    r.cluster_name,
     r.status_name,
     r.teacher_name || "",
     r.marked_at ? new Date(r.marked_at).toLocaleString() : "",

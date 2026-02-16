@@ -74,7 +74,7 @@ export function TeachersUnavailableTable({ data, isLoading, onExport }: Teachers
           <UserX className="h-4 w-4 text-destructive" />
           Teachers Unavailable
         </CardTitle>
-        <Button variant="ghost" size="sm" onClick={onExport} className="h-6 text-xs text-muted-foreground">
+        <Button variant="ghost" size="sm" onClick={onExport} className="h-6 text-[10px] text-muted-foreground">
           <Download className="h-3 w-3 mr-1" />
           Export
         </Button>

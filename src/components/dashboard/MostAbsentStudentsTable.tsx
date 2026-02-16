@@ -64,7 +64,7 @@ export function MostAbsentStudentsTable({
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="px-3 py-2 flex flex-row items-center justify-between border-b shrink-0">
-        <CardTitle className="text-base font-bold flex items-center gap-2">
+        <CardTitle className="text-sm flex items-center gap-2">
           <UserMinus className="h-4 w-4 text-destructive" />
           Most Absent Students
         </CardTitle>

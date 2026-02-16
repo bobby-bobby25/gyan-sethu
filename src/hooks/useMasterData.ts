@@ -379,6 +379,25 @@ export type City = {
   createdAt: string;
 };
 
+export type SchoolType = {
+  id: number;
+  name: string;
+  code: string;
+};
+
+export type StudentMedium = {
+  id: number;
+  name: string;
+  code: string;
+};
+
+export type TeacherSubject = {
+  id: number;
+  name: string;
+  code: string;
+};
+
+
 export const useCities = () => {
   return useQuery({
     queryKey: ["cities"],
@@ -429,5 +448,196 @@ export const useDeleteCity = () => {
       toast.success("City deleted");
     },
     onError: (error: any) => toast.error("Failed to delete: " + error.message),
+  });
+};
+
+// Teacher Subjects
+export const useTeacherSubjects = () => {
+  return useQuery({
+    queryKey: ["teacher-subjects"],
+    queryFn: async () => {
+      const response = await api.get("/MasterData/Subjects");
+      return response.data as TeacherSubject[];
+    },
+  });
+};
+
+export const useCreateTeacherSubject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, code, description }: { name: string; code: string; description?: string }) => {
+      const response = await api.post("/MasterData/Subjects", { name, code, description });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacher-subjects"] });
+      toast.success("Teacher subject added");
+    },
+    onError: (error: any) => toast.error("Failed to add: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+export const useUpdateTeacherSubject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, code, description }: { id: number; name: string; code: string; description?: string }) => {
+      await api.put(`/MasterData/Subjects/${id}`, { name, code, description });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacher-subjects"] });
+      toast.success("Teacher subject updated");
+    },
+    onError: (error: any) => toast.error("Failed to update: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+export const useDeleteTeacherSubject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/MasterData/Subjects/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teacher-subjects"] });
+      toast.success("Teacher subject deleted");
+    },
+    onError: (error: any) => toast.error("Failed to delete: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+// School Types
+export const useSchoolTypes = () => {
+  return useQuery({
+    queryKey: ["school-types"],
+    queryFn: async () => {
+      const response = await api.get("/MasterData/SchoolTypes");
+      return response.data as SchoolType[];
+    },
+  });
+};
+
+export const useCreateSchoolType = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, code }: { name: string; code: string }) => {
+      const response = await api.post("/MasterData/SchoolTypes", { name, code });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["school-types"] });
+      toast.success("School type added");
+    },
+    onError: (error: any) => toast.error("Failed to add: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+export const useUpdateSchoolType = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, code }: { id: number; name: string; code: string }) => {
+      await api.put(`/MasterData/SchoolTypes/${id}`, { name, code });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["school-types"] });
+      toast.success("School type updated");
+    },
+    onError: (error: any) => toast.error("Failed to update: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+export const useDeleteSchoolType = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/MasterData/SchoolTypes/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["school-types"] });
+      toast.success("School type deleted");
+    },
+    onError: (error: any) => toast.error("Failed to delete: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+// Student Mediums
+export const useStudentMediums = () => {
+  return useQuery({
+    queryKey: ["student-mediums"],
+    queryFn: async () => {
+      const response = await api.get("/MasterData/Mediums");
+      return response.data as StudentMedium[];
+    },
+  });
+};
+
+export const useCreateStudentMedium = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, code }: { name: string; code: string }) => {
+      const response = await api.post("/MasterData/Mediums", { name, code });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student-mediums"] });
+      toast.success("Student medium added");
+    },
+    onError: (error: any) => toast.error("Failed to add: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+export const useUpdateStudentMedium = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, code }: { id: number; name: string; code: string }) => {
+      await api.put(`/MasterData/Mediums/${id}`, { name, code });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student-mediums"] });
+      toast.success("Student medium updated");
+    },
+    onError: (error: any) => toast.error("Failed to update: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+export const useDeleteStudentMedium = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/MasterData/Mediums/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student-mediums"] });
+      toast.success("Student medium deleted");
+    },
+    onError: (error: any) => toast.error("Failed to delete: " + (error?.response?.data?.message || error.message)),
+  });
+};
+
+// Search Students by Code
+export type StudentSearchResult = {
+  id: number;
+  name: string;
+  student_code: string;
+  gender?: string;
+  date_of_birth?: string;
+  email?: string;
+  phone?: string;
+};
+
+export const useSearchStudentsByCode = (searchName: string) => {
+  const isEnabled = !!(searchName && searchName.trim() !== "");
+  
+  return useQuery({
+    queryKey: ["search-students", searchName],
+    queryFn: async () => {
+      if (!searchName || searchName.trim() === "") {
+        return [];
+      }
+      const response = await api.get("/Students/SearchStudents", {
+        params: { name: searchName },
+      });
+      return response.data as StudentSearchResult[];
+    },
+    enabled: isEnabled,
   });
 };

@@ -31,6 +31,7 @@ import {
   X,
   TrendingUp,
   MapPin,
+  School,
   BookOpen,
   BarChart3,
   Users,
@@ -52,22 +53,23 @@ import {
   useAttendanceReport,
   exportToCSV,
 } from "@/hooks/useAttendanceReport";
-import { useClusters, usePrograms } from "@/hooks/useTeachers";
+import { usePrograms } from "@/hooks/useTeachers";
+import { useLearningCentresHook } from "@/hooks/useLearningCentres";
 
 const AttendanceReports = () => {
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [filterCluster, setFilterCluster] = useState("all");
+  const [filterLearningCentre, setFilterLearningCentre] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
 
   const { data: reportData, isLoading } = useAttendanceReport(
     format(startDate, "yyyy-MM-dd"),
     format(endDate, "yyyy-MM-dd"),
-    filterCluster,
+    filterLearningCentre,
     filterProgram
   );
 
-  const { data: clusters } = useClusters();
+  const { data: learning_centres } = useLearningCentresHook();
   const { data: programs } = usePrograms();
 
   const handleExport = () => {
@@ -185,18 +187,18 @@ const AttendanceReports = () => {
               </Popover>
             </div>
 
-            {/* Cluster Filter */}
+            {/* Learning Centre Filter */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Cluster</label>
-              <Select value={filterCluster} onValueChange={setFilterCluster}>
+              <label className="text-sm font-medium">Learning Centre</label>
+              <Select value={filterLearningCentre} onValueChange={setFilterLearningCentre}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All Clusters" />
+                  <SelectValue placeholder="All Learning Centres" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Clusters</SelectItem>
-                  {clusters?.map((cluster) => (
-                    <SelectItem key={cluster.id} value={cluster.id}>
-                      {cluster.name}
+                  <SelectItem value="all">All Learning Centres</SelectItem>
+                  {learning_centres?.map((learning_centre) => (
+                    <SelectItem key={learning_centre.id} value={String(learning_centre.id)}>
+                      {learning_centre.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -342,21 +344,21 @@ const AttendanceReports = () => {
               </Card>
             )}
 
-            {/* Cluster Stats Chart */}
-            {reportData.clusterStats.length > 0 && (
+            {/* Learning Centre Stats Chart */}
+            {reportData.learningCentreStats.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Attendance by Cluster</CardTitle>
+                  <CardTitle className="text-base">Attendance by Learning Centre</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={reportData.clusterStats.slice(0, 8)} layout="vertical">
+                      <BarChart data={reportData.learningCentreStats.slice(0, 8)} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                         <YAxis
                           type="category"
-                          dataKey="cluster_name"
+                          dataKey="learning_centre_name"
                           width={100}
                           tick={{ fontSize: 12 }}
                         />
@@ -372,32 +374,32 @@ const AttendanceReports = () => {
 
           {/* Stats Tables Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Cluster Stats Table */}
+            {/* Learning Centre Stats Table */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  By Cluster
+                  <School className="h-4 w-4" />
+                  By Learning Centre
                 </CardTitle>
-                <Badge variant="muted">{reportData.clusterStats.length} clusters</Badge>
+                <Badge variant="muted">{reportData.learningCentreStats.length} learning centres</Badge>
               </CardHeader>
               <CardContent className="p-0">
-                {reportData.clusterStats.length > 0 ? (
+                {reportData.learningCentreStats.length > 0 ? (
                   <div className="max-h-64 overflow-y-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Cluster</TableHead>
+                          <TableHead>Learning Centre</TableHead>
                           <TableHead className="text-center">Present</TableHead>
                           <TableHead className="text-center">Absent</TableHead>
                           <TableHead className="text-right">Rate</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {reportData.clusterStats.map((stat) => (
-                          <TableRow key={stat.cluster_id}>
+                        {reportData.learningCentreStats.map((stat) => (
+                          <TableRow key={stat.learning_centre_id}>
                             <TableCell className="font-medium">
-                              {stat.cluster_name}
+                              {stat.learning_centre_name}
                             </TableCell>
                             <TableCell className="text-center text-success">
                               {stat.present}

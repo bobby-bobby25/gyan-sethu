@@ -13,8 +13,9 @@ CREATE TABLE [dbo].[AttendanceRecords] (
     [AttendanceRecordID] INT IDENTITY(1,1) PRIMARY KEY,
     [StudentID] INT NOT NULL,
     [AcademicYearID] INT NOT NULL,
-    [ClusterID] INT NOT NULL,
+    [LearningCentreID] INT NOT NULL,
     [ProgramID] INT NOT NULL,
+	[ClusterID] INT NOT NULL,
     [AttendanceDate] DATE NOT NULL,
     [StatusID] INT NOT NULL,
     [MarkedByTeacherID] INT NULL,
@@ -26,12 +27,13 @@ CREATE TABLE [dbo].[AttendanceRecords] (
     [UpdatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     CONSTRAINT FK_AttendanceRecords_Students FOREIGN KEY ([StudentID]) REFERENCES [dbo].[Students]([StudentID]) ON DELETE CASCADE,
     CONSTRAINT FK_AttendanceRecords_AcademicYears FOREIGN KEY ([AcademicYearID]) REFERENCES [dbo].[AcademicYears]([AcademicYearID]),
-    CONSTRAINT FK_AttendanceRecords_Clusters FOREIGN KEY ([ClusterID]) REFERENCES [dbo].[Clusters]([ClusterID]),
+    CONSTRAINT FK_AttendanceRecords_LearningCentres FOREIGN KEY ([LearningCentreID]) REFERENCES [dbo].[LearningCentres]([LearningCentreID]),
     CONSTRAINT FK_AttendanceRecords_Programs FOREIGN KEY ([ProgramID]) REFERENCES [dbo].[Programs]([ProgramID]),
+	CONSTRAINT FK_AttendanceRecords_Clusters FOREIGN KEY ([ClusterID]) REFERENCES [dbo].[Clusters]([ClusterID]),
     CONSTRAINT FK_AttendanceRecords_StatusTypes FOREIGN KEY ([StatusID]) REFERENCES [dbo].[AttendanceStatusTypes]([AttendanceStatusTypeID]),
     CONSTRAINT FK_AttendanceRecords_Teachers FOREIGN KEY ([MarkedByTeacherID]) REFERENCES [dbo].[Teachers]([TeacherID]),
     CONSTRAINT FK_AttendanceRecords_Users FOREIGN KEY ([MarkedByUserID]) REFERENCES [dbo].[Users]([UserID]),
-    CONSTRAINT UQ_AttendanceRecords_Unique UNIQUE ([StudentID], [ProgramID], [ClusterID], [AttendanceDate])
+    CONSTRAINT UQ_AttendanceRecords_Unique UNIQUE ([StudentID], [ProgramID], [LearningCentreID], [AttendanceDate])
 );
 GO
 
@@ -46,8 +48,8 @@ CREATE TABLE [dbo].[Donors] (
     [IDProofTypeID] INT NULL,
     [IDNumber] NVARCHAR(100) NULL,
     [Address] NVARCHAR(MAX) NULL,
-    [City] NVARCHAR(100) NULL,
-    [State] NVARCHAR(100) NULL,
+    [City] INT NULL,
+    [State] INT NULL,
     [Company] NVARCHAR(255) NULL,
     [Phone] NVARCHAR(50) NULL,
     [Email] NVARCHAR(255) NULL,
@@ -101,8 +103,9 @@ GO
 -- =============================================
 CREATE NONCLUSTERED INDEX IX_AttendanceRecords_StudentID ON [dbo].[AttendanceRecords]([StudentID]);
 CREATE NONCLUSTERED INDEX IX_AttendanceRecords_AttendanceDate ON [dbo].[AttendanceRecords]([AttendanceDate]);
-CREATE NONCLUSTERED INDEX IX_AttendanceRecords_ClusterID ON [dbo].[AttendanceRecords]([ClusterID]);
+CREATE NONCLUSTERED INDEX IX_AttendanceRecords_LearningCentreID ON [dbo].[AttendanceRecords]([LearningCentreID]);
 CREATE NONCLUSTERED INDEX IX_AttendanceRecords_ProgramID ON [dbo].[AttendanceRecords]([ProgramID]);
+CREATE NONCLUSTERED INDEX IX_AttendanceRecords_ClusterID ON [dbo].[AttendanceRecords]([ClusterID]);
 CREATE NONCLUSTERED INDEX IX_AttendanceRecords_TeacherID ON [dbo].[AttendanceRecords]([MarkedByTeacherID]);
 
 CREATE NONCLUSTERED INDEX IX_Donors_DonorCode ON [dbo].[Donors]([DonorCode]);

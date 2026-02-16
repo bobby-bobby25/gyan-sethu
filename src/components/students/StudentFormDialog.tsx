@@ -53,11 +53,13 @@ import {
   useCities,
   useStates,
 } from "@/hooks/useStudents";
+import { useSearchStudentsByCode } from "@/hooks/useMasterData";
 import type { Student } from "@/hooks/useStudents";
 import { useUploadDocument, useDocumentsByReference, useDeleteDocument, useDocumentUrl } from "@/hooks/useDocuments";
 import { Loader2, Check, ChevronsUpDown, X, Camera, User, FileText, Download, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const studentSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
@@ -74,6 +76,7 @@ const studentSchema = z.object({
   notes: z.string().max(1000, "Notes must be less than 1000 characters").optional(),
   id_proof_type_id: z.string().optional(),
   id_number: z.string().max(50, "ID number must be less than 50 characters").optional(),
+  sibling_student_code: z.string().max(50, "Sibling student code must be less than 50 characters").optional(),
 });
 
 type StudentFormData = z.infer<typeof studentSchema>;
@@ -110,9 +113,14 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
   const [documentsToUpload, setDocumentsToUpload] = useState<File[]>([]);
   const [documentNames, setDocumentNames] = useState<Record<string, string>>({});
   const [documentTypes, setDocumentTypes] = useState<Record<string, string>>({});
+  const [hasSibling, setHasSibling] = useState(false);
+  const [siblingCodeSearch, setSiblingCodeSearch] = useState<string>("");
+  const [siblingCodeOpen, setSiblingCodeOpen] = useState(false);
+  const [fetchedSiblingData, setFetchedSiblingData] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const { getDocumentUrl } = useDocumentUrl();
+  const { data: siblingSearchResults, isLoading: siblingSearchLoading } = useSearchStudentsByCode(siblingCodeSearch);
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -131,6 +139,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
       notes: "",
       id_proof_type_id: "",
       id_number: "",
+      sibling_student_code: "",
     },
   });
 
@@ -152,6 +161,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
         notes: s.notes || "",
         id_proof_type_id: student.id_proof_type_id || "",
         id_number: student.id_proof_number || "",
+        sibling_student_code: s.sibling_student_code || "",
       });
       if (student?.photo_document_id) {
         const url = getDocumentUrl(student.photo_document_id);
@@ -161,6 +171,18 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
       }
       setPhotoFile(null);
       setPhotoChanged(false);
+      // In edit mode, if sibling_student_code exists, tick the checkbox
+      if (s.sibling_student_code) {
+        setHasSibling(true);
+        setFetchedSiblingData({
+          student_code: s.sibling_student_code,
+          name: "Fetched from existing data"
+        });
+      } else {
+        setHasSibling(false);
+        setFetchedSiblingData(null);
+      }
+      setSiblingCodeSearch("");
     } else {
       form.reset({
         name: "",
@@ -177,10 +199,14 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
         notes: "",
         id_proof_type_id: "",
         id_number: "",
+        sibling_student_code: "",
       });
       setPhotoPreview(null);
       setPhotoFile(null);
       setPhotoChanged(false);
+      setHasSibling(false);
+      setSiblingCodeSearch("");
+      setFetchedSiblingData(null);
     }
   }, [student, form, open]);
 
@@ -213,6 +239,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
       notes: data.notes || null,
       id_proof_type_id: data.id_proof_type_id || null,
       id_proof_number: data.id_number || null,
+      sibling_student_code: data.sibling_student_code || null,
     };
 
     let studentId: string;
@@ -266,6 +293,27 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
   const isSubmitting = createStudent.isPending || updateStudent.isPending || uploadDocument.isPending;
 
   const selectedHobbies = form.watch("hobbies") || [];
+
+  // Update fetched sibling data when search results come back
+  useEffect(() => {
+    if (siblingSearchResults && siblingSearchResults.length > 0) {
+      // Results will be shown in the dropdown, no need to auto-select
+    }
+  }, [siblingSearchResults, siblingSearchLoading]);
+
+  const handleSiblingSelect = (selectedStudent: any) => {
+    form.setValue("sibling_student_code", selectedStudent.student_code);
+    setFetchedSiblingData({
+      id: selectedStudent.id,
+      student_code: selectedStudent.student_code,
+      name: selectedStudent.name,
+      gender: selectedStudent.gender,
+      date_of_birth: selectedStudent.date_of_birth,
+      email: selectedStudent.email,
+      phone: selectedStudent.phone,
+    });
+    setSiblingCodeOpen(false);
+  };
 
   const toggleHobby = (hobbyName: string) => {
     const current = form.getValues("hobbies") || [];
@@ -398,6 +446,36 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
                       )}
                     />
 
+                    <div className="col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="Email address" {...field} className="h-9" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Phone number" {...field} className="h-9" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     <FormField
                       control={form.control}
                       name="caste_id"
@@ -418,34 +496,6 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
                               ))}
                             </SelectContent>
                           </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Phone number" {...field} className="h-9" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="Email address" {...field} className="h-9" />
-                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -608,7 +658,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
                 <h3 className="text-sm font-bold text-foreground tracking-wide uppercase">Additional Details</h3>
               </div>
               <div className="bg-primary/5 p-4">
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-3 items-start">
                   <FormField
                     control={form.control}
                     name="ambition"
@@ -766,6 +816,151 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Sibling Details - Add Mode (fully editable) and Edit Mode (disabled) */}
+            <div>
+              <div className="bg-primary/15 px-4 py-2.5">
+                <h3 className="text-sm font-bold text-foreground tracking-wide uppercase">Sibling Details</h3>
+              </div>
+              <div className="bg-primary/5 p-4">
+                {/* Has Sibling Checkbox */}
+                    <div className="min-h-[44px] flex items-center">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="hasSibling"
+                          checked={hasSibling}
+                          disabled={isEditing}
+                          onChange={(e) => {
+                            setHasSibling(e.target.checked);
+                            if (!e.target.checked) {
+                              form.setValue("sibling_student_code", "");
+                              setFetchedSiblingData(null);
+                              setSiblingCodeSearch("");
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-primary"
+                        />
+                        <label
+                          htmlFor="hasSibling"
+                          className="text-sm leading-4 font-medium text-foreground cursor-pointer"
+                        >
+                          Has a sibling studying here?{" "}
+                          <span className="text-muted-foreground font-normal">
+                            (If yes, we’ll link family details automatically.)
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Sibling Student Code Autofill */}
+                    {hasSibling && (
+                      <div className="space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="sibling_student_code"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Sibling Student Code</FormLabel>
+                              <Popover open={siblingCodeOpen} onOpenChange={setSiblingCodeOpen}>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      disabled={isEditing}
+                                      className={cn(
+                                        "justify-between font-normal h-9",
+                                        !field.value && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {field.value || "Search by student name"}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0">
+                                  <Command>
+                                    <CommandInput
+                                      placeholder="Search student name..."
+                                      value={siblingCodeSearch}
+                                      onValueChange={setSiblingCodeSearch}
+                                    />
+                                    <CommandList>
+                                      {siblingSearchLoading ? (
+                                        <div className="flex items-center justify-center py-6">
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        </div>
+                                      ) : siblingSearchResults && siblingSearchResults.length > 0 ? (
+                                        <CommandGroup>
+                                          {siblingSearchResults.map((student: any) => (
+                                            <CommandItem
+                                              key={student.id}
+                                              value={student.name}
+                                              onSelect={() => handleSiblingSelect(student)}
+                                            >
+                                              <Check
+                                                className={cn(
+                                                  "mr-2 h-4 w-4",
+                                                  field.value === student.student_code ? "opacity-100" : "opacity-0"
+                                                )}
+                                              />
+                                              <div className="flex flex-col">
+                                                <span className="font-medium">{student.name}</span>
+                                                <span className="text-xs text-muted-foreground">{student.student_code}</span>
+                                              </div>
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      ) : siblingCodeSearch ? (
+                                        <CommandEmpty>No students found matching "{siblingCodeSearch}"</CommandEmpty>
+                                      ) : (
+                                        <CommandEmpty>Start typing to search...</CommandEmpty>
+                                      )}
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Fetched Sibling Details Display - Hidden in Edit Mode */}
+                        {!isEditing && fetchedSiblingData ? (
+                          <div className="mt-3 p-3 border rounded-lg bg-card">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-xs text-muted-foreground font-medium">Student Code</p>
+                                <p className="text-sm font-medium">{fetchedSiblingData.student_code || "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground font-medium">Name</p>
+                                <p className="text-sm font-medium">{fetchedSiblingData.name || "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground font-medium">Gender</p>
+                                <p className="text-sm font-medium">{fetchedSiblingData.gender || "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground font-medium">Date of Birth</p>
+                                <p className="text-sm font-medium">{fetchedSiblingData.date_of_birth ? format(new Date(fetchedSiblingData.date_of_birth), "dd MMM yyyy") : "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground font-medium">Email</p>
+                                <p className="text-sm font-medium">{fetchedSiblingData.email || "—"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground font-medium">Phone</p>
+                                <p className="text-sm font-medium">{fetchedSiblingData.phone || "—"}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
               </div>
             </div>
 

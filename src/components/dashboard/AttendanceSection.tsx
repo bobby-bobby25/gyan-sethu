@@ -45,7 +45,7 @@ export function AttendanceSection({ stats, isLoading, onExport, onDrillDown }: A
     <Card className="bg-gradient-to-br from-primary/8 via-background to-primary/5 border-primary/30 shadow-sm h-full">
       <CardHeader className="pb-1 pt-2 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
+          <CardTitle className="text-sm flex items-center gap-2">
             <CalendarCheck className="h-4 w-4 text-primary" />
             Attendance Overview
           </CardTitle>

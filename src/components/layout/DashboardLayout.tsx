@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   MapPin,
+  School,
   UserCheck,
   BookOpen,
   Calendar,
@@ -34,6 +35,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "management"] },
   { name: "Students", href: "/students", icon: Users, roles: ["admin", "management"] },
   { name: "Teachers", href: "/teachers", icon: UserCheck, roles: ["admin", "management"] },
+  { name: "Learning Centres", href: "/learning-centres", icon: School, roles: ["admin", "management"] },
   { name: "Clusters", href: "/clusters", icon: MapPin, roles: ["admin", "management"] },
   { name: "Programs", href: "/programs", icon: BookOpen, roles: ["admin", "management"] },
   { name: "Attendance", href: "/attendance", icon: Calendar, roles: ["admin", "management", "teacher"] },
@@ -142,7 +144,7 @@ export const DashboardLayout = ({ children, pageTitle, pageSubtitle }: SidebarPr
               <h1 className="text-lg font-display font-bold text-sidebar-accent-foreground">
                 GyanSethu
               </h1>
-              <p className="text-xs text-sidebar-foreground/60">Admin Panel</p>
+              {/* <p className="text-xs text-sidebar-foreground/60">Admin Panel</p> */}
             </div>
           )}
         </div>
@@ -190,7 +192,8 @@ export const DashboardLayout = ({ children, pageTitle, pageSubtitle }: SidebarPr
       >
         {/* Top Bar */}
         <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-md border-b flex items-center justify-between px-4 lg:px-6">
-          <div className="flex items-center gap-4">
+          {/* Left: Menu Icon */}
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -199,6 +202,8 @@ export const DashboardLayout = ({ children, pageTitle, pageSubtitle }: SidebarPr
             >
               <Menu className="h-5 w-5" />
             </Button>
+            
+            {/* Desktop: Title */}
             {pageTitle && (
               <div className="hidden sm:flex items-baseline gap-2">
                 <h1 className="text-xl lg:text-2xl font-display font-bold">
@@ -213,6 +218,15 @@ export const DashboardLayout = ({ children, pageTitle, pageSubtitle }: SidebarPr
             )}
           </div>
 
+          {/* Center: GyanSethu (Mobile Only) */}
+          <div className="flex md:hidden items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <GraduationCap className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <h2 className="text-sm font-display font-bold">GyanSethu</h2>
+          </div>
+
+          {/* Right: Profile & Logout */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-primary-muted flex items-center justify-center">

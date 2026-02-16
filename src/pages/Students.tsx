@@ -48,6 +48,7 @@ const Students = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedProgram, setSelectedProgram] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("active");
   
   // Dialog states
   const [formOpen, setFormOpen] = useState(false);
@@ -60,7 +61,7 @@ const Students = () => {
     search: searchQuery || undefined,
     clusterId: selectedCluster !== "all" ? selectedCluster : undefined,
     programId: selectedProgram !== "all" ? selectedProgram : undefined,
-    isActive: true,
+    isActive: selectedStatus === "active" ? true : selectedStatus === "inactive" ? false : undefined,
   });
   const { data: clusters } = useClusters();
   const { data: programs } = usePrograms();
@@ -155,9 +156,18 @@ const Students = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon">
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {/* <Button variant="outline" size="icon">
               <Download className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </div>
           <Button variant="hero" className="gap-2 shrink-0" onClick={handleAddStudent}>
             <Plus className="h-4 w-4" />

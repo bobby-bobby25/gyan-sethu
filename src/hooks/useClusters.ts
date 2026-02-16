@@ -9,9 +9,6 @@ export type Cluster = {
   city: string | null;
   state: string | null;
   notes: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  geo_radius_meters: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -20,6 +17,7 @@ export type Cluster = {
 export type ClusterWithStats = Cluster & {
   student_count: number;
   teacher_count: number;
+  learning_centre_count: number;
   programs: string[];
 };
 
@@ -29,9 +27,6 @@ export type ClusterInsert = {
   city?: string | null;
   state?: string | null;
   notes?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  geo_radius_meters?: number | null;
 };
 
 export type ClusterUpdate = Partial<ClusterInsert> & {
@@ -62,29 +57,14 @@ export const useClustersWithStats = () => {
         city: row.city ?? null,
         state: row.state ?? null,
         notes: row.notes ?? null,
-
-        latitude:
-          row.latitude !== null && row.latitude !== undefined
-            ? Number(row.latitude)
-            : null,
-
-        longitude:
-          row.longitude !== null && row.longitude !== undefined
-            ? Number(row.longitude)
-            : null,
-
-        geo_radius_meters:
-          row.geo_radius_meters !== null && row.geo_radius_meters !== undefined
-            ? Number(row.geo_radius_meters)
-            : null,
-
         is_active: Boolean(row.is_active),
         created_at: row.created_at,
         updated_at: row.updated_at,
 
         student_count: Number(row.student_count ?? 0),
         teacher_count: Number(row.teacher_count ?? 0),
-
+        learning_centre_count: Number(row.learning_centre_count ?? 0),
+        
         programs:
           typeof row.programs === "string" && row.programs.trim().length > 0
             ? row.programs.split(",").map((p: string) => p.trim())
@@ -130,6 +110,12 @@ export const useClusterTeachers = (clusterId: string | null) => {
           created_at: row.created_at,
           updated_at: row.updated_at,
           is_active: row.is_active,
+          student_id: row.student_id,
+          is_ex_student: row.is_ex_student,
+          subjects:
+          typeof row.subjects === "string" && row.subjects.trim().length > 0
+            ? row.subjects.split(",").map((p: string) => p.trim())
+            : [],
 
           teachers: {
             id: String(row.id),

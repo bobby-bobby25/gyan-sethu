@@ -16,8 +16,8 @@ CREATE TABLE [dbo].[Teachers] (
     [Email] NVARCHAR(255) NULL,
     [Phone] NVARCHAR(50) NULL,
     [Address] NVARCHAR(MAX) NULL,
-    [City] NVARCHAR(100) NULL,
-    [State] NVARCHAR(100) NULL,
+    [City] INT NULL,
+    [State] INT NULL,
     [IDProofTypeID] INT NULL,
     [IDNumber] NVARCHAR(100) NULL,
     [IsActive] BIT NOT NULL DEFAULT 1,
@@ -61,8 +61,8 @@ CREATE TABLE [dbo].[Students] (
     [IDProofTypeID] INT NULL,
     [IDNumber] NVARCHAR(100) NULL,
     [Address] NVARCHAR(MAX) NULL,
-    [City] NVARCHAR(100) NULL,
-    [State] NVARCHAR(100) NULL,
+    [City] INT NULL,
+    [State] INT NULL,
     [CasteID] INT NULL,
     [EnrolledAt] DATE NOT NULL DEFAULT CAST(GETDATE() AS DATE),
     [IsActive] BIT NOT NULL DEFAULT 1,
@@ -105,16 +105,16 @@ GO
 CREATE TABLE [dbo].[FamilyMembers] (
     [FamilyMemberID] INT IDENTITY(1,1) PRIMARY KEY,
     [StudentID] INT NOT NULL,
-    [Relationship] NVARCHAR(50) NOT NULL,
+    [Relationship] INT NOT NULL,
     [Name] NVARCHAR(255) NOT NULL,
     [DateOfBirth] DATE NULL,
     [IDProofTypeID] INT NULL,
     [IDNumber] NVARCHAR(100) NULL,
     [Address] NVARCHAR(MAX) NULL,
-    [City] NVARCHAR(100) NULL,
-    [State] NVARCHAR(100) NULL,
+    [City] INT NULL,
+    [State] INT NULL,
     [Phone] NVARCHAR(50) NULL,
-    [Occupation] NVARCHAR(100) NULL,
+    [Occupation] INT NULL,
     [AnnualIncome] DECIMAL(12, 2) NULL,
     [Currency] NVARCHAR(10) NULL DEFAULT 'INR',
     [BankName] NVARCHAR(255) NULL,
@@ -125,6 +125,22 @@ CREATE TABLE [dbo].[FamilyMembers] (
     CONSTRAINT FK_FamilyMembers_Students FOREIGN KEY ([StudentID]) REFERENCES [dbo].[Students]([StudentID]) ON DELETE CASCADE,
     CONSTRAINT FK_FamilyMembers_IDProofTypes FOREIGN KEY ([IDProofTypeID]) REFERENCES [dbo].[IDProofTypes]([IDProofTypeID])
 );
+GO
+
+IF NOT EXISTS (SELECT * FROM SYS.TABLES WHERE NAME = 'StudentFamilyMemberLinking')
+BEGIN
+    CREATE TABLE [dbo].[StudentFamilyMemberLinking] (
+        [StudentFamilyMemberLinkingID] INT IDENTITY(1,1) PRIMARY KEY,
+        [StudentID] INT NOT NULL,
+        [FamilyMemberID] INT NOT NULL,
+        [IsPrimary] BIT NOT NULL DEFAULT 1,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        CONSTRAINT FK_StudentFamilyMemberLinking_Students FOREIGN KEY ([StudentID]) REFERENCES [dbo].[Students]([StudentID]) ON DELETE CASCADE,
+        CONSTRAINT FK_StudentFamilyMemberLinking_FamilyMember FOREIGN KEY ([FamilyMemberID]) REFERENCES [dbo].[FamilyMembers]([FamilyMemberID]) ON DELETE NO ACTION,
+        CONSTRAINT UQ_StudentFamilyMemberLinking UNIQUE ([StudentID], [FamilyMemberID])
+    );
+    
+END
 GO
 
 -- =============================================
@@ -145,6 +161,8 @@ CREATE NONCLUSTERED INDEX IX_StudentAcademicRecords_ProgramID ON [dbo].[StudentA
 CREATE NONCLUSTERED INDEX IX_StudentAcademicRecords_AcademicYearID ON [dbo].[StudentAcademicRecords]([AcademicYearID]);
 
 CREATE NONCLUSTERED INDEX IX_FamilyMembers_StudentID ON [dbo].[FamilyMembers]([StudentID]);
+CREATE NONCLUSTERED INDEX IX_StudentFamilyMemberLinking_StudentID ON [dbo].[StudentFamilyMemberLinking]([StudentID]);
+CREATE NONCLUSTERED INDEX IX_StudentFamilyMemberLinking_FamilyMemberID ON [dbo].[StudentFamilyMemberLinking]([FamilyMemberID]);
 GO
 
 -- =============================================

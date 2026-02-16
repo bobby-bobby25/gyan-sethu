@@ -15,14 +15,8 @@ GO
 /* =========================================================
    STUDENTS – PROFILE FIELDS
 ========================================================= */
-IF COL_LENGTH('Students', 'City') IS NULL
-    ALTER TABLE Students ADD City NVARCHAR(100);
-
-IF COL_LENGTH('Students', 'State') IS NULL
-    ALTER TABLE Students ADD State NVARCHAR(100);
-
 IF COL_LENGTH('Students', 'Gender') IS NULL
-    ALTER TABLE Students ADD Gender NVARCHAR(20);
+    ALTER TABLE Students ADD Gender INT;
 
 IF COL_LENGTH('Students', 'Phone') IS NULL
     ALTER TABLE Students ADD Phone NVARCHAR(20);
@@ -31,7 +25,7 @@ IF COL_LENGTH('Students', 'Email') IS NULL
     ALTER TABLE Students ADD Email NVARCHAR(255);
 
 IF COL_LENGTH('Students', 'Ambition') IS NULL
-    ALTER TABLE Students ADD Ambition NVARCHAR(255);
+    ALTER TABLE Students ADD Ambition INT;
 
 IF COL_LENGTH('Students', 'Hobbies') IS NULL
     ALTER TABLE Students ADD Hobbies NVARCHAR(MAX);
@@ -55,12 +49,6 @@ REFERENCES Documents(DocumentID);
 /* =========================================================
    FAMILY MEMBERS
 ========================================================= */
-IF COL_LENGTH('FamilyMembers', 'City') IS NULL
-    ALTER TABLE FamilyMembers ADD City NVARCHAR(100);
-
-IF COL_LENGTH('FamilyMembers', 'State') IS NULL
-    ALTER TABLE FamilyMembers ADD State NVARCHAR(100);
-
 IF COL_LENGTH('FamilyMembers', 'Phone') IS NULL
     ALTER TABLE FamilyMembers ADD Phone NVARCHAR(20);
 
@@ -68,7 +56,7 @@ IF COL_LENGTH('FamilyMembers', 'PhotoUrl') IS NULL
     ALTER TABLE FamilyMembers ADD PhotoUrl NVARCHAR(MAX);
 
 IF COL_LENGTH('FamilyMembers', 'Gender') IS NULL
-    ALTER TABLE FamilyMembers ADD Gender NVARCHAR(20);
+    ALTER TABLE FamilyMembers ADD Gender INT;
 
 IF COL_LENGTH('FamilyMembers', 'Notes') IS NULL
     ALTER TABLE FamilyMembers ADD Notes NVARCHAR(MAX);
@@ -86,14 +74,8 @@ REFERENCES Documents(DocumentID);
 /* =========================================================
    TEACHERS
 ========================================================= */
-IF COL_LENGTH('Teachers', 'City') IS NULL
-    ALTER TABLE Teachers ADD City NVARCHAR(100);
-
-IF COL_LENGTH('Teachers', 'State') IS NULL
-    ALTER TABLE Teachers ADD State NVARCHAR(100);
-
 IF COL_LENGTH('Teachers', 'Gender') IS NULL
-    ALTER TABLE Teachers ADD Gender NVARCHAR(20);
+    ALTER TABLE Teachers ADD Gender INT;
 
 IF COL_LENGTH('Teachers', 'DateOfBirth') IS NULL
     ALTER TABLE Teachers ADD DateOfBirth DATE;
@@ -113,16 +95,6 @@ ALTER TABLE Teachers
 ADD CONSTRAINT FK_Teacher_PhotoDocument
 FOREIGN KEY (PhotoDocumentId)
 REFERENCES Documents(DocumentID);
-
-/* =========================================================
-   DONORS
-========================================================= */
-IF COL_LENGTH('Donors', 'City') IS NULL
-    ALTER TABLE Donors ADD City NVARCHAR(100);
-
-IF COL_LENGTH('Donors', 'State') IS NULL
-    ALTER TABLE Donors ADD State NVARCHAR(100);
-GO
 
 /* =========================================================
    CLUSTERS

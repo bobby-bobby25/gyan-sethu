@@ -193,16 +193,39 @@ BEGIN
     SELECT 
         u.[UserID] AS [UserID],
         u.[Email] AS [Email],
-        u.[FullName] AS [FullName],
-        u.[Phone] AS [Phone],
+        ISNULL(u.[FullName],'') AS [FullName],
+        ISNULL(u.[Phone],'') AS [Phone],
         u.[CreatedAt] AS [CreatedAt],
         u.[UpdatedAt] AS [UpdatedAt],
-        r.[RoleName] AS [Role],
+        ISNULL(r.[RoleName],'') AS [Role],
         u.[IsActive] AS [IsActive]
     FROM [dbo].[Users] u
     LEFT JOIN [dbo].[UserRoles] ur ON u.[UserID] = ur.[UserID]
     LEFT JOIN [dbo].[Roles] r ON ur.[RoleID] = r.[RoleID]
     WHERE u.[UserID] = @UserID;
+END;
+GO
+
+-- Get user by Email
+CREATE OR ALTER PROCEDURE [dbo].[sp_GetUserByEmail]
+    @Email NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        u.[UserID] AS [UserID],
+        u.[Email] AS [Email],
+        ISNULL(u.[FullName],'') AS [FullName],
+        ISNULL(u.[Phone],'') AS [Phone],
+        u.[CreatedAt] AS [CreatedAt],
+        u.[UpdatedAt] AS [UpdatedAt],
+        ISNULL(r.[RoleName],'') AS [Role],
+        u.[IsActive] AS [IsActive]
+    FROM [dbo].[Users] u
+    LEFT JOIN [dbo].[UserRoles] ur ON u.[UserID] = ur.[UserID]
+    LEFT JOIN [dbo].[Roles] r ON ur.[RoleID] = r.[RoleID]
+    WHERE u.[Email] = @Email;
 END;
 GO
 
@@ -342,7 +365,10 @@ BEGIN
         ISNULL(c.[Name],'') AS [cluster],
         ISNULL(p.[Name],'') AS [program],
         ISNULL(ay.[Name],'') AS [academicyearname],
-        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent],
+		ISNULL(sar.SchoolTypeID,0) AS [school_type_id],
+		ISNULL(sar.MediumID,0) AS [medium_id],
+		ISNULL(s.SiblingStudentCode,'') AS [sibling_student_code]
     FROM [dbo].[Students] s
     LEFT JOIN [dbo].[CasteCategories] cc ON s.[CasteID] = cc.[CasteCategoryID]
     LEFT JOIN [dbo].[IDProofTypes] ipt ON s.[IDProofTypeID] = ipt.[IDProofTypeID]
@@ -399,7 +425,10 @@ BEGIN
         ISNULL(c.[Name],'') AS [cluster],
         ISNULL(p.[Name],'') AS [program],
         ISNULL(ay.[Name],'') AS [academicyearname],
-        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent],
+		ISNULL(sar.SchoolTypeID,0) AS [school_type_id],
+		ISNULL(sar.MediumID,0) AS [medium_id],
+		ISNULL(s.SiblingStudentCode,'') AS [sibling_student_code]
     FROM [dbo].[Students] s
     LEFT JOIN [dbo].[CasteCategories] cc ON s.[CasteID] = cc.[CasteCategoryID]
     LEFT JOIN [dbo].[IDProofTypes] ipt ON s.[IDProofTypeID] = ipt.[IDProofTypeID]
@@ -427,6 +456,7 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_InsertStudent]
     @City NVARCHAR(100) = NULL,
     @State NVARCHAR(100) = NULL,
     @CasteID INT = NULL,
+	@SiblingStudentCode NVARCHAR(100) = NULL,
 	@StudentID INT OUTPUT,
     @Output NVARCHAR(50) OUTPUT
 AS
@@ -434,17 +464,57 @@ BEGIN
     SET NOCOUNT ON;
     
     BEGIN TRY
+		BEGIN TRANSACTION
+
         INSERT INTO [dbo].[Students] (
             [Name], [DateOfBirth], [Gender], [Email], [Phone], [Ambition], [Hobbies], 
-			[Notes], [IDProofTypeID], [IDNumber], [Address], [City], [State], [CasteID]
+			[Notes], [IDProofTypeID], [IDNumber], [Address], [City], [State], [CasteID],
+			[SiblingStudentCode]
         )
         VALUES (
             @Name, @DateOfBirth, @Gender, @Email, @Phone, @Ambition, @Hobbies, 
-			@Notes, @IDProofTypeID, @IDNumber, @Address, @City, @State, @CasteID
+			@Notes, @IDProofTypeID, @IDNumber, @Address, @City, @State, @CasteID, 
+			@SiblingStudentCode
         );
         
-        SET @Output = 'Success';
 		SET @StudentID = SCOPE_IDENTITY();
+
+		IF (@SiblingStudentCode IS NOT NULL AND LTRIM(RTRIM(@SiblingStudentCode)) <> '')
+        BEGIN
+            DECLARE @SiblingStudentID INT;
+
+            SELECT @SiblingStudentID = StudentID
+            FROM [dbo].[Students]
+            WHERE StudentCode = @SiblingStudentCode;
+
+            IF (@SiblingStudentID IS NOT NULL)
+            BEGIN
+                INSERT INTO [dbo].[StudentFamilyMemberLinking] (
+                    StudentID,
+                    FamilyMemberID,
+                    IsPrimary,
+                    CreatedAt
+                )
+                SELECT
+                    @StudentID,
+                    sfl.FamilyMemberID,
+                    CAST(0 AS BIT),
+                    GETUTCDATE()
+                FROM [dbo].[StudentFamilyMemberLinking] sfl
+                WHERE sfl.StudentID = @SiblingStudentID
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM [dbo].[StudentFamilyMemberLinking] x
+                      WHERE x.StudentID = @StudentID
+                        AND x.FamilyMemberID = sfl.FamilyMemberID
+                  );
+            END
+        END
+
+        COMMIT TRANSACTION;
+
+		SET @Output = 'Success';
+
     END TRY
     BEGIN CATCH
         SET @Output = 'Error';
@@ -471,6 +541,7 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_UpdateStudent]
     @City NVARCHAR(100) = NULL,
     @State NVARCHAR(100) = NULL,
     @CasteID INT = NULL,
+	@SiblingStudentCode NVARCHAR(100) = NULL,
     @Output NVARCHAR(50) OUTPUT
 AS
 BEGIN
@@ -493,6 +564,7 @@ BEGIN
             [City] = ISNULL(@City, [City]),
             [State] = ISNULL(@State, [State]),
             [CasteID] = ISNULL(@CasteID, [CasteID]),
+			[SiblingStudentCode] = ISNULL(@SiblingStudentCode, ''),
             [UpdatedAt] = GETUTCDATE()
         WHERE [StudentID] = @StudentID;
         
@@ -534,12 +606,15 @@ CREATE OR ALTER PROCEDURE sp_InsertStudentAcademicRecord
     @AcademicYearID INT,
     @ClusterID INT,
     @ProgramID INT,
+	@LearningCentreID INT,
     @SchoolName NVARCHAR(255) = NULL,
     @ClassGrade NVARCHAR(50) = NULL,
     @AttendancePercentage DECIMAL(5,2) = NULL,
     @ResultPercentage DECIMAL(5,2) = NULL,
     @YearlyFees DECIMAL(10,2) = NULL,
     @Remarks NVARCHAR(MAX) = NULL,
+	@SchoolTypeID INT = NULL,
+	@MediumID INT = NULL,
 	@IsActive BIT,
     @Output NVARCHAR(50) OUTPUT
 )
@@ -550,14 +625,14 @@ BEGIN
         INSERT INTO StudentAcademicRecords
         (
             StudentID, AcademicYearID, ClusterID, ProgramID,
-            SchoolName, ClassGrade, AttendancePercentage,
-            ResultPercentage, YearlyFees, Remarks, IsActive
+            LearningCentreID, SchoolName, ClassGrade, AttendancePercentage,
+            ResultPercentage, YearlyFees, Remarks, SchoolTypeID, MediumID, IsActive
         )
         VALUES
         (
             @StudentID, @AcademicYearID, @ClusterID, @ProgramID,
-            @SchoolName, @ClassGrade, @AttendancePercentage,
-            @ResultPercentage, @YearlyFees, @Remarks, @IsActive
+            @LearningCentreID, @SchoolName, @ClassGrade, @AttendancePercentage,
+            @ResultPercentage, @YearlyFees, @Remarks, @SchoolTypeID, @MediumID, @IsActive
         );
 
         SET @Output = 'Success';
@@ -575,12 +650,15 @@ CREATE OR ALTER PROCEDURE sp_UpdateStudentAcademicRecord
     @AcademicYearID INT,
     @ClusterID INT,
     @ProgramID INT,
+	@LearningCentreID INT,
     @SchoolName NVARCHAR(255) = NULL,
     @ClassGrade NVARCHAR(50) = NULL,
     @AttendancePercentage DECIMAL(5,2) = NULL,
     @ResultPercentage DECIMAL(5,2) = NULL,
     @YearlyFees DECIMAL(10,2) = NULL,
     @Remarks NVARCHAR(MAX) = NULL,
+	@SchoolTypeID INT = NULL,
+	@MediumID INT = NULL,
     @IsActive BIT = 1,
     @Output NVARCHAR(50) OUTPUT
 AS
@@ -593,12 +671,15 @@ BEGIN
             AcademicYearID = @AcademicYearID,
             ClusterID = @ClusterID,
             ProgramID = @ProgramID,
+			LearningCentreID = @LearningCentreID,
             SchoolName = @SchoolName,
             ClassGrade = @ClassGrade,
             AttendancePercentage = @AttendancePercentage,
             ResultPercentage = @ResultPercentage,
             YearlyFees = @YearlyFees,
             Remarks = @Remarks,
+			SchoolTypeID = @SchoolTypeID,
+			MediumID = @MediumID,
             IsActive = @IsActive,
             UpdatedAt = GETUTCDATE()
         WHERE StudentAcademicRecordID = @StudentAcademicRecordID;
@@ -650,28 +731,34 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT
-        sar.StudentAcademicRecordID AS Id,
-        sar.StudentID               AS StudentId,
-        sar.AcademicYearID          AS AcademicYearId,
-        sar.ClusterID               AS ClusterId,
-        sar.ProgramID               AS ProgramId,
-        sar.SchoolName,
+        ISNULL(sar.StudentAcademicRecordID,0)	AS Id,
+        ISNULL(sar.StudentID,0)					AS StudentId,
+        ISNULL(sar.AcademicYearID,0)			AS AcademicYearId,
+        ISNULL(sar.ClusterID,0)					AS ClusterId,
+        ISNULL(sar.ProgramID,0)					AS ProgramId,
+        ISNULL(sar.LearningCentreID,0)			AS LearningCentreId,
+        ISNULL(sar.SchoolName,'')			    AS SchoolName,
         sar.ClassGrade,
         sar.AttendancePercentage,
         sar.ResultPercentage,
         sar.YearlyFees,
-        sar.Remarks,
+        ISNULL(sar.Remarks,'')					AS Remarks,
         sar.IsActive,
-        c.Name						AS ClusterName,
-        p.Name						AS ProgramName,
-        ay.Name						AS AcademicYearName,
-        ay.IsCurrent                AS AcademicYearIsCurrent
+        ISNULL(c.Name,'')						AS ClusterName,
+        ISNULL(p.Name,'')						AS ProgramName,
+		ISNULL(lc.Name,'')						AS LearningCentreName,
+        ISNULL(ay.Name,'')						AS AcademicYearName,
+        ay.IsCurrent							AS AcademicYearIsCurrent,
+		ISNULL(sar.SchoolTypeID,0)				AS SchoolTypeId,
+		ISNULL(sar.MediumID,0)					AS MediumId
 
     FROM StudentAcademicRecords sar
     INNER JOIN Clusters c
         ON sar.ClusterID = c.ClusterID
     INNER JOIN Programs p
         ON sar.ProgramID = p.ProgramID
+	INNER JOIN LearningCentres lc
+        ON sar.LearningCentreID = lc.LearningCentreID
     INNER JOIN AcademicYears ay
         ON sar.AcademicYearID = ay.AcademicYearID
     WHERE sar.StudentID = @StudentID
@@ -687,7 +774,7 @@ GO
 -- Get Attendance Records with Details
 CREATE OR ALTER PROCEDURE [dbo].[sp_GetAttendanceRecords]
     @StudentID INT = NULL,
-    @ClusterID INT = NULL,
+    @LearningCentreID INT = NULL,
     @ProgramID INT = NULL,
     @AcademicYearID INT = NULL,
 	@StatusID INT = NULL,
@@ -706,10 +793,12 @@ BEGIN
 		ast.[AttendanceStatusTypeID] AS [StatusId],
         ast.[Name] AS [Status],
         ast.[Code] AS [StatusCode],
-		ar.[ClusterID] AS [ClusterID],
+		ar.[LearningCentreID] AS [LearningCentreID],
 		ar.[ProgramID] AS [ProgramID],
-        c.[Name] AS [ClusterName],
+		c.[ClusterID] AS [ClusterID],
+        lc.[Name] AS [LearningCentreName],
         p.[Name] AS [ProgramName],
+		c.[Name] AS [ClusterName],
 		ar.[AcademicYearID] AS [AcademicYearID],
         ay.[Name] AS [AcademicYear],
 		ISNULL(ar.[MarkedByTeacherID],0) AS [MarkedByTeacherID],
@@ -722,12 +811,13 @@ BEGIN
     FROM [dbo].[AttendanceRecords] ar
     INNER JOIN [dbo].[Students] s ON ar.[StudentID] = s.[StudentID]
     INNER JOIN [dbo].[AttendanceStatusTypes] ast ON ar.[StatusID] = ast.[AttendanceStatusTypeID]
-    INNER JOIN [dbo].[Clusters] c ON ar.[ClusterID] = c.[ClusterID]
+    INNER JOIN [dbo].[LearningCentres] lc ON ar.[LearningCentreID] = lc.[LearningCentreID]
     INNER JOIN [dbo].[Programs] p ON ar.[ProgramID] = p.[ProgramID]
+	INNER JOIN [dbo].[Clusters] c ON c.[ClusterID] = ar.ClusterID
     INNER JOIN [dbo].[AcademicYears] ay ON ar.[AcademicYearID] = ay.[AcademicYearID]
     LEFT JOIN [dbo].[Teachers] t ON ar.[MarkedByTeacherID] = t.[TeacherID]
     WHERE (@StudentID IS NULL OR ar.[StudentID] = @StudentID)
-        AND (@ClusterID IS NULL OR ar.[ClusterID] = @ClusterID)
+        AND (@LearningCentreID IS NULL OR ar.[LearningCentreID] = @LearningCentreID)
         AND (@ProgramID IS NULL OR ar.[ProgramID] = @ProgramID)
         AND (@AcademicYearID IS NULL OR ar.[AcademicYearID] = @AcademicYearID)
 		AND (@StatusID IS NULL OR ar.[StatusID] = @StatusID)
@@ -741,7 +831,7 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_GetAttendanceReport]
 (
     @StartDate DATE,
     @EndDate DATE,
-    @ClusterID INT = NULL,
+    @LearningCentreID INT = NULL,
     @ProgramID INT = NULL
 )
 AS
@@ -755,32 +845,35 @@ BEGIN
 		ast.Name                 AS StatusName,
 		s.Name                   AS StudentName,
 		s.StudentCode            AS StudentCode,
-		c.ClusterID              AS ClusterId,
-		c.Name                   AS ClusterName,
+		lc.LearningCentreID      AS LearningCentreId,
+		lc.Name                  AS LearningCentreName,
 		p.ProgramID              AS ProgramId,
 		p.Name                   AS ProgramName,
+		c.ClusterID              AS ClusterId,
+		c.Name                   AS ClusterName,
 		t.Name                   AS TeacherName,
 		ar.MarkedAt              AS MarkedAt
     FROM dbo.AttendanceRecords ar 
 	INNER JOIN dbo.Students s ON s.StudentID = ar.StudentID
     INNER JOIN dbo.AttendanceStatusTypes ast ON ast.AttendanceStatusTypeID = ar.StatusID
-    INNER JOIN dbo.Clusters c ON c.ClusterID = ar.ClusterID
+    INNER JOIN dbo.LearningCentres lc ON lc.LearningCentreID = ar.LearningCentreID
     INNER JOIN dbo.Programs p ON p.ProgramID = ar.ProgramID
+    INNER JOIN dbo.Clusters c ON c.ClusterID = ar.ClusterID
     LEFT JOIN dbo.Teachers t ON t.TeacherID = ar.MarkedByTeacherID
     WHERE ar.AttendanceDate BETWEEN @StartDate AND @EndDate
-        AND (@ClusterID IS NULL OR ar.ClusterID = @ClusterID)
+        AND (@LearningCentreID IS NULL OR ar.LearningCentreID = @LearningCentreID)
         AND (@ProgramID IS NULL OR ar.ProgramID = @ProgramID)
-    ORDER BY ar.AttendanceDate ASC, c.Name, p.Name, s.Name;
+    ORDER BY ar.AttendanceDate ASC, lc.Name, p.Name, s.Name;
 END;
 GO
-
 
 -- Upsert Attendance Record
 CREATE OR ALTER PROCEDURE [dbo].[sp_UpsertAttendanceRecord]
     @StudentID INT,
     @AcademicYearID INT,
-    @ClusterID INT,
+    @LearningCentreID INT,
     @ProgramID INT,
+	@ClusterID INT,
     @AttendanceDate DATE,
     @StatusID INT,
     @MarkedByTeacherID INT = NULL,
@@ -796,7 +889,7 @@ BEGIN
         SELECT 1 FROM [dbo].[AttendanceRecords]
         WHERE [StudentID] = @StudentID
             AND [ProgramID] = @ProgramID
-            AND [ClusterID] = @ClusterID
+            AND [LearningCentreID] = @LearningCentreID
             AND [AttendanceDate] = @AttendanceDate
     )
     BEGIN
@@ -810,25 +903,71 @@ BEGIN
             [MarkedAt] = GETUTCDATE()
         WHERE [StudentID] = @StudentID
             AND [ProgramID] = @ProgramID
-            AND [ClusterID] = @ClusterID
+            AND [LearningCentreID] = @LearningCentreID
             AND [AttendanceDate] = @AttendanceDate;
     END
     ELSE
     BEGIN
         -- Insert new record
         INSERT INTO [dbo].[AttendanceRecords] (
-            [StudentID], [AcademicYearID], [ClusterID], [ProgramID],
+            [StudentID], [AcademicYearID], [LearningCentreID], [ProgramID],[ClusterID],
             [AttendanceDate], [StatusID], [MarkedByTeacherID], 
             [MarkedByUserID], [Latitude], [Longitude]
         )
         VALUES (
-            @StudentID, @AcademicYearID, @ClusterID, @ProgramID,
+            @StudentID, @AcademicYearID, @LearningCentreID, @ProgramID, @ClusterID,
             @AttendanceDate, @StatusID, @MarkedByTeacherID,
             @MarkedByUserID, @Latitude, @Longitude
         );
     END
     
     SELECT SCOPE_IDENTITY() AS [AttendanceRecordID];
+END;
+GO
+
+
+--Get Students for Attendance
+CREATE OR ALTER PROCEDURE [dbo].[sp_GetStudentsForAttendance]
+    @LearningCentreID INT,
+	@ProgramID INT,
+    @AcademicYearID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT DISTINCT 
+		s.StudentID as ID, 
+		s.Name as Name, 
+		s.StudentCode as Student_Code
+	FROM [dbo].[Students] s 
+	INNER JOIN [dbo].[StudentAcademicRecords] sar ON s.[StudentID] = sar.[StudentID]
+    WHERE sar.[LearningCentreID] = @LearningCentreID AND sar.[ProgramID] = @ProgramID AND sar.[AcademicYearID] = @AcademicYearID AND s.[IsActive] = 1
+    ORDER BY s.[Name]
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_GetLearningCentreProgramCombinations
+    @AcademicYearID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        sar.LearningCentreID     AS LearningCentreId,
+        sar.ProgramID            AS ProgramId,
+        lc.Name                  AS LearningCentreName,
+        lc.City                  AS LearningCentreCity,
+        p.Name                   AS ProgramName,
+		c.ClusterID				 AS ClusterId,
+		c.Name					 AS ClusterName,
+        COUNT(DISTINCT sar.StudentID) AS StudentCount
+    FROM dbo.StudentAcademicRecords sar
+    INNER JOIN dbo.LearningCentres lc ON lc.LearningCentreID = sar.LearningCentreID AND lc.IsActive = 1
+    INNER JOIN dbo.Programs p ON p.ProgramID = sar.ProgramID AND p.IsActive = 1
+	INNER JOIN dbo.Clusters c ON c.ClusterID = sar.ClusterID AND c.IsActive = 1
+    WHERE sar.AcademicYearID = @AcademicYearID AND sar.IsActive = 1
+    GROUP BY sar.LearningCentreID, sar.ProgramID, c.ClusterID, lc.Name, lc.City, p.Name, c.Name
+    ORDER BY lc.Name, p.Name;
 END;
 GO
 
@@ -864,17 +1003,24 @@ BEGIN
         ISNULL(ta.[TeacherAssignmentID], 0) AS [teacherassignmentid],
         ISNULL(ta.[ClusterID], 0) AS [clusterid],
         ISNULL(ta.[ProgramID], 0) AS [programid],
+		ISNULL(ta.[LearningCentreID], 0) AS [learningcentreid],
         ISNULL(ta.[AcademicYearID], 0) AS [academicyearid],
         ISNULL(ta.[Role], '') AS [role],
         ISNULL(c.[Name], '') AS [cluster],
         ISNULL(p.[Name], '') AS [program],
+		ISNULL(lc.[Name], '') AS [learningcentre],
         ISNULL(ay.[Name], '') AS [academicyearname],
-        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent],
+		ISNULL(t.[Subjects],'') AS [subjects],
+		ISNULL(t.[StudentID],0) AS [studentid],
+		CASE WHEN ISNULL(t.[StudentID],0) > 0 THEN CAST(1 AS BIT) 
+		ELSE CAST(0 AS BIT) END AS [isExStudent]
     FROM [dbo].[Teachers] t
     LEFT JOIN [dbo].[IDProofTypes] ipt ON t.[IDProofTypeID] = ipt.[IDProofTypeID]
     LEFT JOIN [dbo].[TeacherAssignments] ta ON t.[TeacherID] = ta.[TeacherID]
     LEFT JOIN [dbo].[Clusters] c ON ta.[ClusterID] = c.[ClusterID]
     LEFT JOIN [dbo].[Programs] p ON ta.[ProgramID] = p.[ProgramID]
+	LEFT JOIN [dbo].[LearningCentres] lc ON ta.[LearningCentreID] = lc.[LearningCentreID]
     LEFT JOIN [dbo].[AcademicYears] ay ON ta.[AcademicYearID] = ay.[AcademicYearID]
     WHERE t.[IsActive] = @IsActive
     ORDER BY t.[Name];
@@ -909,17 +1055,24 @@ BEGIN
         ISNULL(ta.[TeacherAssignmentID], 0) AS [teacherassignmentid],
         ISNULL(ta.[ClusterID], 0) AS [clusterid],
         ISNULL(ta.[ProgramID], 0) AS [programid],
+		ISNULL(ta.[LearningCentreID], 0) AS [learningcentreid],
         ISNULL(ta.[AcademicYearID], 0) AS [academicyearid],
         ISNULL(ta.[Role], '') AS [role],
         ISNULL(c.[Name], '') AS [cluster],
         ISNULL(p.[Name], '') AS [program],
+		ISNULL(lc.[Name], '') AS [learningcentre],
         ISNULL(ay.[Name], '') AS [academicyearname],
-        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent],
+		ISNULL(t.[Subjects],'') AS [subjects],
+		ISNULL(t.[StudentID],0) AS [studentid],
+		CASE WHEN ISNULL(t.[StudentID],0) > 0 THEN CAST(1 AS BIT) 
+		ELSE CAST(0 AS BIT) END AS [isExStudent]
     FROM [dbo].[Teachers] t
     LEFT JOIN [dbo].[IDProofTypes] ipt ON t.[IDProofTypeID] = ipt.[IDProofTypeID]
     LEFT JOIN [dbo].[TeacherAssignments] ta ON t.[TeacherID] = ta.[TeacherID]
     LEFT JOIN [dbo].[Clusters] c ON ta.[ClusterID] = c.[ClusterID]
     LEFT JOIN [dbo].[Programs] p ON ta.[ProgramID] = p.[ProgramID]
+	LEFT JOIN [dbo].[LearningCentres] lc ON ta.[LearningCentreID] = lc.[LearningCentreID]
     LEFT JOIN [dbo].[AcademicYears] ay ON ta.[AcademicYearID] = ay.[AcademicYearID]
     WHERE t.[TeacherID] = @TeacherID;
 END;
@@ -927,11 +1080,11 @@ GO
 
 -- Create teacher
 CREATE OR ALTER PROCEDURE [dbo].[sp_InsertTeacher]
-    @UserID INT = NULL,
+(
     @Name NVARCHAR(255),
-	@Gender NVARCHAR(15),
-	@DateOfBirth DATE,
-    @Email NVARCHAR(255) = NULL,
+    @Gender NVARCHAR(15),
+    @DateOfBirth DATE,
+    @Email NVARCHAR(255),
     @Phone NVARCHAR(50) = NULL,
     @Address NVARCHAR(MAX) = NULL,
     @City NVARCHAR(100) = NULL,
@@ -939,32 +1092,79 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_InsertTeacher]
     @Notes NVARCHAR(MAX) = NULL,
     @IDProofTypeID INT = NULL,
     @IDNumber NVARCHAR(100) = NULL,
-	@TeacherID INT OUTPUT,
+    @Subjects NVARCHAR(MAX) = NULL,
+    @StudentId INT = NULL,
+    @PasswordHash NVARCHAR(500),
+    @TeacherID INT OUTPUT,
+    @UserID INT OUTPUT,
     @Output NVARCHAR(50) OUTPUT
+)
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
+    DECLARE @TeacherRoleID INT;
+
     BEGIN TRY
-        INSERT INTO [dbo].[Teachers] (
-            [UserID], [Gender], [DateOfBirth], [Name], [Email], [Phone], [Address], 
-            [City], [State], [Notes], [IDProofTypeID], [IDNumber]
+        BEGIN TRANSACTION;
+
+        IF EXISTS (SELECT 1 FROM dbo.Users WHERE Email = @Email)
+        BEGIN
+            ROLLBACK;
+            SET @Output = 'User Already Exists. Please use different email';
+            SET @UserID = 0;
+            RETURN;
+        END
+
+        INSERT INTO dbo.Teachers(
+            Gender, DateOfBirth, Name, Email, Phone, Address,
+            City, State, Notes, IDProofTypeID, IDNumber, Subjects, StudentID
+			)
+        VALUES( @Gender, @DateOfBirth, @Name, @Email, @Phone, @Address,
+            @City, @State, @Notes, @IDProofTypeID, @IDNumber, @Subjects, @StudentId
+			);
+
+        SET @TeacherID = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.Users
+        (
+            Email, PasswordHash, FullName, Phone
         )
-        VALUES (
-            @UserID, @Gender, @DateOfBirth ,@Name, @Email, @Phone, @Address,
-            @City, @State, @Notes, @IDProofTypeID, @IDNumber
+        VALUES
+        (
+            @Email, @PasswordHash, @Name, @Phone
         );
-        
+
+        SET @UserID = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.UserProfiles (UserID, Email, FullName, Phone)
+        VALUES (@UserID, @Email, @Name, @Phone);
+
+        SELECT @TeacherRoleID = RoleID FROM dbo.Roles WHERE RoleName = 'teacher';
+
+        INSERT INTO dbo.UserRoles(UserID, RoleID)
+        VALUES(@UserID, @TeacherRoleID);
+
+        UPDATE dbo.Teachers
+        SET UserID = @UserID
+        WHERE TeacherID = @TeacherID;
+
+        COMMIT;
+
         SET @Output = 'Success';
-		SET @TeacherID = SCOPE_IDENTITY();
+
     END TRY
     BEGIN CATCH
+        ROLLBACK;
+        SET @TeacherID = 0;
+        SET @UserID = 0;
         SET @Output = 'Error';
-		SET @TeacherID = 0;
         THROW;
     END CATCH
 END;
 GO
+
+
 
 -- Update teacher
 CREATE OR ALTER PROCEDURE [dbo].[sp_UpdateTeacher]
@@ -980,6 +1180,8 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_UpdateTeacher]
 	@Notes NVARCHAR(MAX) = NULL,
     @IDProofTypeID INT = NULL,
     @IDNumber NVARCHAR(100) = NULL,
+	@Subjects NVARCHAR(MAX) = NULL,
+	@StudentId INT = NULL,
     @Output NVARCHAR(50) OUTPUT
 AS
 BEGIN
@@ -999,6 +1201,8 @@ BEGIN
 			[Notes] = ISNULL(@Notes, [Notes]),
             [IDProofTypeID] = ISNULL(@IDProofTypeID, [IDProofTypeID]),
             [IDNumber] = ISNULL(@IDNumber, [IDNumber]),
+			[Subjects] = ISNULL(@Subjects,''),
+			[StudentID] = ISNULL(@StudentId,0),
             [UpdatedAt] = GETUTCDATE()
         WHERE [TeacherID] = @TeacherID;
         
@@ -1039,17 +1243,24 @@ BEGIN
         ISNULL(ta.[TeacherAssignmentID], 0) AS [teacherassignmentid],
         ISNULL(ta.[ClusterID], 0) AS [clusterid],
         ISNULL(ta.[ProgramID], 0) AS [programid],
+		ISNULL(ta.[LearningCentreID], 0) AS [learningcentreid],
         ISNULL(ta.[AcademicYearID], 0) AS [academicyearid],
         ISNULL(ta.[Role], '') AS [role],
         ISNULL(c.[Name], '') AS [cluster],
         ISNULL(p.[Name], '') AS [program],
+		ISNULL(lc.[Name], '') AS [learningcentre],
         ISNULL(ay.[Name], '') AS [academicyearname],
-        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent],
+		ISNULL(t.[Subjects],'') AS [subjects],
+		ISNULL(t.[StudentID],0) AS [studentid],
+		CASE WHEN ISNULL(t.[StudentID],0) > 0 THEN CAST(1 AS BIT) 
+		ELSE CAST(0 AS BIT) END AS [isExStudent]
     FROM [dbo].[Teachers] t
     LEFT JOIN [dbo].[IDProofTypes] ipt ON t.[IDProofTypeID] = ipt.[IDProofTypeID]
     LEFT JOIN [dbo].[TeacherAssignments] ta ON t.[TeacherID] = ta.[TeacherID]
     LEFT JOIN [dbo].[Clusters] c ON ta.[ClusterID] = c.[ClusterID]
     LEFT JOIN [dbo].[Programs] p ON ta.[ProgramID] = p.[ProgramID]
+	LEFT JOIN [dbo].[LearningCentres] lc ON ta.[LearningCentreID] = lc.[LearningCentreID]
     LEFT JOIN [dbo].[AcademicYears] ay ON ta.[AcademicYearID] = ay.[AcademicYearID]
     WHERE t.[UserID] = @UserID;
 END;
@@ -1073,9 +1284,6 @@ BEGIN
         c.[City] AS [City],
         c.[State] AS [State],
 		c.[Notes] AS [Notes],
-        c.[Latitude] AS [Latitude],
-        c.[Longitude] AS [Longitude],
-        c.[GeoRadiusMeters] AS [GeoRadiusMeters],
         c.[CreatedAt] AS [CreatedAt],
         c.[UpdatedAt] AS [UpdatedAt],
         c.[IsActive] AS [IsActive]
@@ -1098,14 +1306,12 @@ BEGIN
         c.[City]             AS [City],
         c.[State]            AS [State],
         c.[Notes]            AS [Notes],
-        c.[Latitude]         AS [Latitude],
-        c.[Longitude]        AS [Longitude],
-        c.[GeoRadiusMeters]  AS [GeoRadiusMeters],
         c.[CreatedAt]        AS [CreatedAt],
         c.[UpdatedAt]        AS [UpdatedAt],
         c.[IsActive]         AS [IsActive],
         ISNULL(st.StudentCount, 0) AS StudentCount,
         ISNULL(tc.TeacherCount, 0) AS TeacherCount,
+		ISNULL(lc.LearningCentreCount, 0) AS LearningCentreCount,
         ISNULL(p.ProgramsCsv, '') AS Programs
 
     FROM [dbo].[Clusters] c
@@ -1126,6 +1332,15 @@ BEGIN
         WHERE ta.IsActive = 1
         GROUP BY ta.ClusterID
     ) tc ON tc.ClusterID = c.ClusterID
+
+    LEFT JOIN (
+        SELECT
+            lc.ClusterID,
+            COUNT(lc.LearningCentreID) AS LearningCentreCount
+        FROM [dbo].[LearningCentres] lc
+        WHERE lc.IsActive = 1
+        GROUP BY lc.ClusterID
+    ) lc ON lc.ClusterID = c.ClusterID
 
     LEFT JOIN (
         SELECT
@@ -1161,9 +1376,6 @@ BEGIN
         c.[City] AS [City],
         c.[State] AS [State],
 		c.[Notes] AS [Notes],
-        c.[Latitude] AS [Latitude],
-        c.[Longitude] AS [Longitude],
-        c.[GeoRadiusMeters] AS [GeoRadiusMeters],
         c.[CreatedAt] AS [CreatedAt],
         c.[UpdatedAt] AS [UpdatedAt],
         c.[IsActive] AS [IsActive]
@@ -1179,9 +1391,6 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_InsertCluster]
     @City NVARCHAR(100) = NULL,
     @State NVARCHAR(100) = NULL,
 	@Notes NVARCHAR(MAX) = NULL,
-    @Latitude DECIMAL(10, 8) = NULL,
-    @Longitude DECIMAL(11, 8) = NULL,
-    @GeoRadiusMeters INT = 200,
 	@ClusterID INT OUTPUT,
     @Output NVARCHAR(50) OUTPUT
 AS
@@ -1190,12 +1399,10 @@ BEGIN
     
     BEGIN TRY
         INSERT INTO [dbo].[Clusters] (
-            [Name], [Address], [City], [State], [Notes], 
-            [Latitude], [Longitude], [GeoRadiusMeters]
+            [Name], [Address], [City], [State], [Notes]
         )
         VALUES (
-            @Name, @Address, @City, @State, @Notes,
-            @Latitude, @Longitude, @GeoRadiusMeters
+            @Name, @Address, @City, @State, @Notes
         );
         
         SET @Output = 'Success';
@@ -1217,9 +1424,6 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_UpdateCluster]
     @City NVARCHAR(100) = NULL,
     @State NVARCHAR(100) = NULL,
 	@Notes NVARCHAR(MAX) = NULL,
-    @Latitude DECIMAL(10, 8) = NULL,
-    @Longitude DECIMAL(11, 8) = NULL,
-    @GeoRadiusMeters INT = NULL,
     @Output NVARCHAR(50) OUTPUT
 AS
 BEGIN
@@ -1233,9 +1437,6 @@ BEGIN
             [City] = ISNULL(@City, [City]),
             [State] = ISNULL(@State, [State]),
 			[Notes] = ISNULL(@Notes, [Notes]),
-            [Latitude] = ISNULL(@Latitude, [Latitude]),
-            [Longitude] = ISNULL(@Longitude, [Longitude]),
-            [GeoRadiusMeters] = ISNULL(@GeoRadiusMeters, [GeoRadiusMeters]),
             [UpdatedAt] = GETUTCDATE()
         WHERE [ClusterID] = @ClusterID;
         
@@ -1715,6 +1916,7 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_CreateTeacherAssignment]
     @AcademicYearID INT,
     @ClusterID INT,
     @ProgramID INT,
+    @LearningCentreID INT,
     @Role NVARCHAR(20),
     @IsActive BIT,
     @Output NVARCHAR(50) OUTPUT
@@ -1722,8 +1924,8 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-        INSERT INTO TeacherAssignments (TeacherID, AcademicYearID, ClusterID, ProgramID, Role, IsActive)
-        VALUES (@TeacherID, @AcademicYearID, @ClusterID, @ProgramID, @Role, @IsActive);
+        INSERT INTO TeacherAssignments (TeacherID, AcademicYearID, ClusterID, ProgramID, LearningCentreID, Role, IsActive)
+        VALUES (@TeacherID, @AcademicYearID, @ClusterID, @ProgramID, @LearningCentreID, @Role, @IsActive);
         SET @Output = 'Success';
     END TRY
     BEGIN CATCH
@@ -1734,10 +1936,10 @@ GO
 
 CREATE OR ALTER PROCEDURE [dbo].[sp_UpdateTeacherAssignment]
     @TeacherAssignmentID INT,
-    @TeacherID INT,
     @AcademicYearID INT,
     @ClusterID INT,
     @ProgramID INT,
+    @LearningCentreID INT,
     @Role NVARCHAR(20),
     @IsActive BIT,
     @Output NVARCHAR(50) OUTPUT
@@ -1746,10 +1948,10 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         UPDATE TeacherAssignments
-        SET TeacherID = @TeacherID,
-            AcademicYearID = @AcademicYearID,
+        SET AcademicYearID = @AcademicYearID,
             ClusterID = @ClusterID,
             ProgramID = @ProgramID,
+			LearningCentreID = @LearningCentreID,
             Role = @Role,
             IsActive = @IsActive,
             UpdatedAt = GETUTCDATE()
@@ -1778,45 +1980,19 @@ BEGIN
     END CATCH
 END
 GO
-
-CREATE OR ALTER PROCEDURE dbo.sp_GetClusterProgramCombinations
-    @AcademicYearID INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        sar.ClusterID            AS ClusterId,
-        sar.ProgramID            AS ProgramId,
-        c.Name                   AS ClusterName,
-        c.City                   AS ClusterCity,
-        p.Name                   AS ProgramName,
-        COUNT(DISTINCT sar.StudentID) AS StudentCount
-    FROM dbo.StudentAcademicRecords sar
-    INNER JOIN dbo.Clusters c ON c.ClusterID = sar.ClusterID AND c.IsActive = 1
-    INNER JOIN dbo.Programs p ON p.ProgramID = sar.ProgramID AND p.IsActive = 1
-    WHERE sar.AcademicYearID = @AcademicYearID AND sar.IsActive = 1
-    GROUP BY sar.ClusterID, sar.ProgramID, c.Name, c.City, p.Name
-    ORDER BY c.Name, p.Name;
-END;
-GO
-
-
+ 
 CREATE OR ALTER PROCEDURE sp_GetClustersForProgram
     @ProgramID INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT 
+    SELECT DISTINCT
 		c.[ClusterID] AS [Id],
         c.[Name] AS [Name],
         c.[Address] AS [Address],
         c.[City] AS [City],
         c.[State] AS [State],
 		c.[Notes] AS [Notes],
-        c.[Latitude] AS [Latitude],
-        c.[Longitude] AS [Longitude],
-        c.[GeoRadiusMeters] AS [GeoRadiusMeters],
         c.[CreatedAt] AS [CreatedAt],
         c.[UpdatedAt] AS [UpdatedAt],
         c.[IsActive] AS [IsActive]
@@ -1865,7 +2041,10 @@ BEGIN
         ISNULL(c.[Name],'') AS [cluster],
         ISNULL(p.[Name],'') AS [program],
         ISNULL(ay.[Name],'') AS [academicyearname],
-        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent],
+		ISNULL(sar.SchoolTypeID,0) AS [school_type_id],
+		ISNULL(sar.MediumID,0) AS [medium_id],
+		ISNULL(s.SiblingStudentCode,'') AS [sibling_student_code]
     FROM [dbo].[Students] s
     INNER JOIN [dbo].[StudentAcademicRecords] sar ON s.[StudentID] = sar.[StudentID]
     LEFT JOIN [dbo].[CasteCategories] cc ON s.[CasteID] = cc.[CasteCategoryID]
@@ -1882,7 +2061,7 @@ GO
 -- CLUSTER STUDENTS AND TEACHERS RETRIEVAL
 -- =============================================
 
--- Get students in a specific cluster with nested data
+-- Get students in a specific cluster
 CREATE OR ALTER PROCEDURE [dbo].[sp_GetStudentsByCluster]
     @ClusterID INT
 AS
@@ -1923,7 +2102,10 @@ BEGIN
         ISNULL(c.[Name],'') AS [cluster],
         ISNULL(p.[Name],'') AS [program],
         ISNULL(ay.[Name],'') AS [academicyearname],
-        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent],
+		ISNULL(sar.SchoolTypeID,0) AS [school_type_id],
+		ISNULL(sar.MediumID,0) AS [medium_id],
+		ISNULL(s.SiblingStudentCode,'') AS [sibling_student_code]
     FROM [dbo].[Students] s
     INNER JOIN [dbo].[StudentAcademicRecords] sar ON s.[StudentID] = sar.[StudentID]
     LEFT JOIN [dbo].[CasteCategories] cc ON s.[CasteID] = cc.[CasteCategoryID]
@@ -1964,46 +2146,140 @@ BEGIN
         ISNULL(ta.[TeacherAssignmentID], 0) AS [teacherassignmentid],
         ISNULL(ta.[ClusterID], 0) AS [clusterid],
         ISNULL(ta.[ProgramID], 0) AS [programid],
+		ISNULL(ta.[LearningCentreID], 0) AS [learningcentreid],
         ISNULL(ta.[AcademicYearID], 0) AS [academicyearid],
         ISNULL(ta.[Role], '') AS [role],
         ISNULL(c.[Name], '') AS [cluster],
         ISNULL(p.[Name], '') AS [program],
+		ISNULL(lc.[Name], '') AS [learningcentre],
         ISNULL(ay.[Name], '') AS [academicyearname],
-        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent]
+        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent],
+		ISNULL(t.[Subjects],'') AS [subjects],
+		ISNULL(t.[StudentID],0) AS [studentid],
+		CASE WHEN ISNULL(t.[StudentID],0) > 0 THEN CAST(1 AS BIT) 
+		ELSE CAST(0 AS BIT) END AS [isExStudent]
     FROM [dbo].[Teachers] t
     LEFT JOIN [dbo].[IDProofTypes] ipt ON t.[IDProofTypeID] = ipt.[IDProofTypeID]
     INNER JOIN [dbo].[TeacherAssignments] ta ON t.[TeacherID] = ta.[TeacherID]
     LEFT JOIN [dbo].[Clusters] c ON ta.[ClusterID] = c.[ClusterID]
     LEFT JOIN [dbo].[Programs] p ON ta.[ProgramID] = p.[ProgramID]
+	LEFT JOIN [dbo].[LearningCentres] lc ON ta.[LearningCentreID] = lc.[LearningCentreID]
     LEFT JOIN [dbo].[AcademicYears] ay ON ta.[AcademicYearID] = ay.[AcademicYearID]
     WHERE ta.[ClusterID] = @ClusterID AND t.[IsActive] = 1
     ORDER BY t.[Name];
 END;
 GO
 
--- =============================================
--- ATTENDANCE STUDENTS
--- =============================================
-
---Get Students for Attendance
-CREATE OR ALTER PROCEDURE [dbo].[sp_GetStudentsForAttendance]
-    @ClusterID INT,
-	@ProgramID INT,
-    @AcademicYearID INT
+-- Get students in a specific learning centre
+CREATE OR ALTER PROCEDURE [dbo].[sp_GetStudentsByLearningCentre]
+    @LearningCentreID INT
 AS
 BEGIN
     SET NOCOUNT ON;
     
-    SELECT DISTINCT 
-		s.StudentID as ID, 
-		s.Name as Name, 
-		s.StudentCode as Student_Code
-	FROM [dbo].[Students] s 
-	INNER JOIN [dbo].[StudentAcademicRecords] sar ON s.[StudentID] = sar.[StudentID]
-    WHERE sar.[ClusterID] = @ClusterID AND sar.[ProgramID] = @ProgramID AND sar.[AcademicYearID] = @AcademicYearID AND s.[IsActive] = 1
-    ORDER BY s.[Name]
+    SELECT DISTINCT
+        s.[StudentID] AS [id],
+        s.[Name] AS [name],
+        s.[StudentCode] AS [student_code],
+        ISNULL(s.[DateOfBirth],'') AS [dob],
+		ISNULL(s.[Gender],'') AS [Gender],
+		ISNULL(s.[City],'') AS [City],
+		ISNULL(s.[State],'') AS [State],
+		ISNULL(s.[Ambition],'') AS [Ambition],
+		ISNULL(s.[Hobbies],'') AS [Hobbies],
+		ISNULL(s.[Notes],'') AS [Notes], 
+        ISNULL(s.[CasteID],0) AS [caste_category_id],
+        ISNULL(s.[IDProofTypeID],0) AS [id_proof_type_id],
+        ISNULL(s.[IDNumber],'') AS [id_proof_number],
+        ISNULL(s.[PhotoDocumentID],'') AS [photo_document_id],
+        ISNULL(s.[Address],'') AS [address],
+		ISNULL(s.[Phone],'') AS [phone],
+        ISNULL(s.[Email],'') AS [Email],
+        s.[CreatedAt] AS [created_at],
+        s.[UpdatedAt] AS [updated_at],
+        s.[IsActive] AS [is_active],
+        ISNULL(sar.[StudentAcademicRecordID], 0) AS [academic_record_id],
+        ISNULL(sar.[ClusterID], 0) AS [cluster_id],
+        ISNULL(sar.[ProgramID], 0) AS [program_id],
+        ISNULL(sar.[AcademicYearID], 0) AS [academic_year_id],
+        ISNULL(sar.[ClassGrade], '') AS [class_grade],
+        ISNULL(sar.[SchoolName], '') AS [school_name],
+        ISNULL(sar.[AttendancePercentage], 0) AS [attendance_percentage],
+        ISNULL(sar.[ResultPercentage], 0) AS [result_percentage],
+        ISNULL(cc.[Name],'') AS [caste_category],
+        ISNULL(ipt.[Name],'') AS [id_proof_type],
+        ISNULL(c.[Name],'') AS [cluster],
+        ISNULL(p.[Name],'') AS [program],
+        ISNULL(ay.[Name],'') AS [academicyearname],
+        ISNULL(ay.[IsCurrent],0) AS [academicyeariscurrent],
+		ISNULL(sar.SchoolTypeID,0) AS [school_type_id],
+		ISNULL(sar.MediumID,0) AS [medium_id],
+		ISNULL(s.SiblingStudentCode,'') AS [sibling_student_code]
+    FROM [dbo].[Students] s
+    INNER JOIN [dbo].[StudentAcademicRecords] sar ON s.[StudentID] = sar.[StudentID]
+    LEFT JOIN [dbo].[CasteCategories] cc ON s.[CasteID] = cc.[CasteCategoryID]
+    LEFT JOIN [dbo].[IDProofTypes] ipt ON s.[IDProofTypeID] = ipt.[IDProofTypeID]
+    LEFT JOIN [dbo].[Clusters] c ON sar.[ClusterID] = c.[ClusterID]
+    LEFT JOIN [dbo].[Programs] p ON sar.[ProgramID] = p.[ProgramID]
+    LEFT JOIN [dbo].[AcademicYears] ay ON sar.[AcademicYearID] = ay.[AcademicYearID]
+    WHERE sar.[LearningCentreID] = @LearningCentreID AND s.[IsActive] = 1
+    ORDER BY s.[Name];
 END;
 GO
+
+-- Get teachers assigned to a specific learning centre 
+CREATE OR ALTER PROCEDURE [dbo].[sp_GetTeachersByLearningCentre]
+    @LearningCentreID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT DISTINCT
+        t.[TeacherID] AS [id],
+        t.[Name] AS [name],
+		t.[Gender] AS [Gender],
+		t.[DateOfBirth] AS [DateOfBirth],
+        t.[Email] AS [email],
+        t.[Phone] AS [phone],
+        ISNULL(t.[IDProofTypeID],0) AS [idprooftypeid],
+        ISNULL(t.[IDNumber], '') AS [idproofnumber],
+		ISNULL(t.[PhotoDocumentID], '') AS [photodocumentid],
+        ISNULL(t.[Address], '') AS [address],
+        ISNULL(t.[City], '') AS [city],
+        ISNULL(t.[State], '') AS [state],
+		ISNULL(t.[Notes], '') AS [Notes],
+        t.[CreatedAt] AS [createdat],
+        t.[UpdatedAt] AS [updatedat],
+        t.[IsActive] AS [isactive],
+        ISNULL(ipt.[Name],'') AS [idprooftype],
+        ISNULL(ta.[TeacherAssignmentID], 0) AS [teacherassignmentid],
+        ISNULL(ta.[ClusterID], 0) AS [clusterid],
+        ISNULL(ta.[ProgramID], 0) AS [programid],
+		ISNULL(ta.[LearningCentreID], 0) AS [learningcentreid],
+        ISNULL(ta.[AcademicYearID], 0) AS [academicyearid],
+        ISNULL(ta.[Role], '') AS [role],
+        ISNULL(c.[Name], '') AS [cluster],
+        ISNULL(p.[Name], '') AS [program],
+		ISNULL(lc.[Name], '') AS [learningcentre],
+        ISNULL(ay.[Name], '') AS [academicyearname],
+        ISNULL(ay.[IsCurrent], 0) AS [academicyeariscurrent],
+		ISNULL(t.[Subjects],'') AS [subjects],
+		ISNULL(t.[StudentID],0) AS [studentid],
+		CASE WHEN ISNULL(t.[StudentID],0) > 0 THEN CAST(1 AS BIT) 
+		ELSE CAST(0 AS BIT) END AS [isExStudent]
+    FROM [dbo].[Teachers] t
+    LEFT JOIN [dbo].[IDProofTypes] ipt ON t.[IDProofTypeID] = ipt.[IDProofTypeID]
+    INNER JOIN [dbo].[TeacherAssignments] ta ON t.[TeacherID] = ta.[TeacherID]
+    LEFT JOIN [dbo].[Clusters] c ON ta.[ClusterID] = c.[ClusterID]
+    LEFT JOIN [dbo].[Programs] p ON ta.[ProgramID] = p.[ProgramID]
+	LEFT JOIN [dbo].[LearningCentres] lc ON ta.[LearningCentreID] = lc.[LearningCentreID]
+    LEFT JOIN [dbo].[AcademicYears] ay ON ta.[AcademicYearID] = ay.[AcademicYearID]
+    WHERE ta.[LearningCentreID] = @LearningCentreID AND t.[IsActive] = 1
+    ORDER BY t.[Name];
+END;
+GO
+
+
 
 -- =============================================
 -- FAMILY MEMBERS STORED PROCEDURES
@@ -2042,10 +2318,12 @@ BEGIN
 		fm.[CreatedAt] AS [CreatedAt],      
 		fm.[UpdatedAt] AS [UpdatedAt], 
 		ISNULL(fm.[IsActive], 0) AS [IsActive]
-    FROM [dbo].[FamilyMembers] fm
-    LEFT JOIN [dbo].[IDProofTypes] ipt ON fm.[IDProofTypeID] = ipt.[IDProofTypeID]
-    WHERE (@StudentID IS NULL OR fm.[StudentID] = @StudentID)
+	FROM [dbo].[StudentFamilyMemberLinking] sfl
+    INNER JOIN [dbo].[FamilyMembers] fm ON sfl.FamilyMemberID = fm.FamilyMemberID
+    LEFT JOIN [dbo].[IDProofTypes] ipt ON fm.IDProofTypeID = ipt.IDProofTypeID
+    WHERE sfl.StudentID = @StudentID AND fm.IsActive = 1
     ORDER BY fm.[Name];
+
 END;
 GO
 
@@ -2082,10 +2360,12 @@ BEGIN
 		fm.[CreatedAt] AS [CreatedAt],      
 		fm.[UpdatedAt] AS [UpdatedAt], 
 		ISNULL(fm.[IsActive], 0) AS [IsActive]
-    FROM [dbo].[FamilyMembers] fm
-    LEFT JOIN [dbo].[IDProofTypes] ipt ON fm.[IDProofTypeID] = ipt.[IDProofTypeID]
+	FROM [dbo].[StudentFamilyMemberLinking] sfl
+    INNER JOIN [dbo].[FamilyMembers] fm ON sfl.FamilyMemberID = fm.FamilyMemberID
+    LEFT JOIN [dbo].[IDProofTypes] ipt ON fm.IDProofTypeID = ipt.IDProofTypeID
     WHERE (@FamilyMemberID IS NULL OR fm.[FamilyMemberID] = @FamilyMemberID)
-    ORDER BY fm.[Name];
+	ORDER BY fm.[Name];
+
 END;
 GO
 
@@ -2112,8 +2392,10 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_InsertFamilyMember]
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     BEGIN TRY
+	  BEGIN TRAN;
+
         INSERT INTO [dbo].[FamilyMembers] (
             [StudentID], [Name], [Relationship], [Phone],
             [IDProofTypeID], [IDNumber], [DateOfBirth], [Occupation],
@@ -2128,6 +2410,21 @@ BEGIN
         );
         
         SET @FamilyMemberID = @@IDENTITY;
+
+		IF NOT EXISTS (
+            SELECT 1
+            FROM [dbo].[StudentFamilyMemberLinking]
+            WHERE StudentID = @StudentID
+              AND FamilyMemberID = @FamilyMemberID
+        )
+        BEGIN
+            INSERT INTO [dbo].[StudentFamilyMemberLinking]
+                (StudentID, FamilyMemberID, IsPrimary)
+            VALUES
+                (@StudentID, @FamilyMemberID, 1);
+        END
+
+        COMMIT TRAN;
         SET @Output = 'Success';
     END TRY
     BEGIN CATCH

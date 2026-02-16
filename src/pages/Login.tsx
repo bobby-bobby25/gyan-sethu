@@ -216,6 +216,7 @@ const Login = () => {
                     <button
                       type="button"
                       className="text-xs text-primary hover:underline font-medium"
+                      onClick={() => navigate(`/reset-password?email=${encodeURIComponent(formData.email)}`)}
                     >
                       Forgot password?
                     </button>

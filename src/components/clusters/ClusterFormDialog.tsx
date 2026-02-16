@@ -39,12 +39,8 @@ const ClusterFormDialog = ({
     address: "",
     city: "",
     state: "",
-    latitude: "",
-    longitude: "",
-    geo_radius_meters: "200",
     notes: "",
   });
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const createCluster = useCreateCluster();
   const updateCluster = useUpdateCluster();
@@ -70,9 +66,6 @@ const ClusterFormDialog = ({
         address: cluster.address || "",
         city: cluster.city || "",
         state: cluster.state || "",
-        latitude: cluster.latitude?.toString() || "",
-        longitude: cluster.longitude?.toString() || "",
-        geo_radius_meters: cluster.geo_radius_meters?.toString() || "200",
         notes: (cluster as any).notes || "",
       });
     } else {
@@ -81,37 +74,10 @@ const ClusterFormDialog = ({
         address: "",
         city: "",
         state: "",
-        latitude: "",
-        longitude: "",
-        geo_radius_meters: "200",
         notes: "",
       });
     }
   }, [cluster, open]);
-
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
-
-    setIsGettingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setFormData((prev) => ({
-          ...prev,
-          latitude: position.coords.latitude.toFixed(6),
-          longitude: position.coords.longitude.toFixed(6),
-        }));
-        setIsGettingLocation(false);
-      },
-      (error) => {
-        alert("Error getting location: " + error.message);
-        setIsGettingLocation(false);
-      },
-      { enableHighAccuracy: true }
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,11 +87,6 @@ const ClusterFormDialog = ({
       address: formData.address || null,
       city: formData.city || null,
       state: formData.state || null,
-      latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-      longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-      geo_radius_meters: formData.geo_radius_meters
-        ? parseInt(formData.geo_radius_meters)
-        : 200,
       notes: formData.notes || null,
     };
 
@@ -240,84 +201,6 @@ const ClusterFormDialog = ({
                     placeholder="Optional notes"
                     className="h-9 mt-1.5"
                   />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Geo-Location Section */}
-          <div className="rounded-lg border border-primary/10 overflow-hidden">
-            <div className="bg-primary/15 px-4 py-2.5 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground tracking-wide uppercase flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                Geo-Location Settings
-              </h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleGetCurrentLocation}
-                disabled={isGettingLocation}
-                className="h-7 text-xs"
-              >
-                <Navigation className="h-3 w-3 mr-1" />
-                {isGettingLocation ? "Getting..." : "Use Current"}
-              </Button>
-            </div>
-            <div className="bg-primary/5 p-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="latitude">Latitude</Label>
-                  <Input
-                    id="latitude"
-                    type="number"
-                    step="any"
-                    value={formData.latitude}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        latitude: e.target.value,
-                      }))
-                    }
-                    placeholder="0.000000"
-                    className="h-9 mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="longitude">Longitude</Label>
-                  <Input
-                    id="longitude"
-                    type="number"
-                    step="any"
-                    value={formData.longitude}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        longitude: e.target.value,
-                      }))
-                    }
-                    placeholder="0.000000"
-                    className="h-9 mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="geo_radius_meters">Radius (meters)</Label>
-                  <Input
-                    id="geo_radius_meters"
-                    type="number"
-                    value={formData.geo_radius_meters}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        geo_radius_meters: e.target.value,
-                      }))
-                    }
-                    placeholder="200"
-                    className="h-9 mt-1.5"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Geo-fence for attendance
-                  </p>
                 </div>
               </div>
             </div>
