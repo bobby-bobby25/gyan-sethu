@@ -58,11 +58,14 @@ namespace StudenthubAPI.Data
         public DbSet<LoginDetails> CheckLoginDetails { get; set; }
         public DbSet<CommonOutput> UserLogout { get; set; }
         public DbSet<CommonOutput> CheckRefreshToken { get; set; }
-        public DbSet<VerificationOTP> VerificationOTPs { get; set; }
         #endregion
 
         #region Users
         public DbSet<UserWithRole> Users { get; set; }
+        #endregion
+
+        #region Auth
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
         #endregion
 
         #region Students
@@ -139,6 +142,7 @@ namespace StudenthubAPI.Data
             //base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<LoginDetails>().HasNoKey();
             modelBuilder.Entity<CommonOutput>().HasNoKey().ToView("spMbl_CMN_CheckAddRefreshToken");
+            modelBuilder.Entity<PasswordResetToken>().HasKey(p => p.Id);
 
             // Configure keyless entities for stored procedures
             modelBuilder.Entity<UserWithRole>().HasNoKey();
@@ -154,6 +158,7 @@ namespace StudenthubAPI.Data
             modelBuilder.Entity<AttendanceRecordBO>().HasNoKey();
             modelBuilder.Entity<AttendanceReportBO>().HasNoKey();          
             modelBuilder.Entity<AttendanceStudentsBO>().HasNoKey();
+            //modelBuilder.Entity<GradeBO>().HasNoKey();
             modelBuilder.Entity<DonationBO>().HasNoKey();
             modelBuilder.Entity<FamilyMemberBO>().HasNoKey();
 
@@ -163,11 +168,11 @@ namespace StudenthubAPI.Data
             modelBuilder.Entity<AttendanceStatsBO>().HasNoKey();
             modelBuilder.Entity<AttendanceTrendBO>().HasNoKey();
             modelBuilder.Entity<TeacherUnavailableBO>().HasNoKey();
-            modelBuilder.Entity<ClusterNeedingAttentionBO>().HasNoKey();
+            modelBuilder.Entity<LearningCentreNeedingAttentionBO>().HasNoKey();
             modelBuilder.Entity<AbsentStudentBO>().HasNoKey();
-            modelBuilder.Entity<ClusterPerformanceBO>().HasNoKey();
-            modelBuilder.Entity<ClusterPerformanceItemBO>().HasNoKey();    
-            modelBuilder.Entity<ClusterPerformanceResponseBO>().HasNoKey();
+            modelBuilder.Entity<LearningCentrePerformanceBO>().HasNoKey();
+            modelBuilder.Entity<LearningCentrePerformanceItemBO>().HasNoKey();    
+            modelBuilder.Entity<LearningCentrePerformanceResponseBO>().HasNoKey();
             modelBuilder.Entity<DonorDashboardStatsBO>().HasNoKey();
             modelBuilder.Entity<DonorYearComparisonBO>().HasNoKey();
             modelBuilder.Entity<MonthlyDonationTrendBO>().HasNoKey();

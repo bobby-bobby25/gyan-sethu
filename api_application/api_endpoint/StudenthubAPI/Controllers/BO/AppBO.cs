@@ -80,19 +80,19 @@ namespace StudenthubAPI.BO
         public string? Notes { get; set; }
 
         [JsonPropertyName("caste_category_id")]
-        public int Caste_Category_Id { get; set; }
+        public int? Caste_Category_Id { get; set; }
 
         [JsonPropertyName("id_proof_type_id")]
-        public int Id_Proof_Type_Id { get; set; }
+        public int? Id_Proof_Type_Id { get; set; }
 
         [JsonPropertyName("id_proof_number")]
-        public string Id_Proof_Number { get; set; }
+        public string? Id_Proof_Number { get; set; }
 
         [JsonPropertyName("photo_document_id")]
         public int Photo_Document_Id { get; set; }
 
         [JsonPropertyName("address")]
-        public string Address { get; set; }
+        public string? Address { get; set; }
 
         [JsonPropertyName("phone")]
         public string? Phone { get; set; }
@@ -110,22 +110,22 @@ namespace StudenthubAPI.BO
         public bool Is_Active { get; set; }
 
         [JsonPropertyName("academic_record_id")]
-        public int Academic_Record_Id { get; set; }
+        public int? Academic_Record_Id { get; set; }
 
         [JsonPropertyName("cluster_id")]
-        public int Cluster_Id { get; set; }
+        public int? Cluster_Id { get; set; }
 
         [JsonPropertyName("program_id")]
-        public int Program_Id { get; set; }
+        public int? Program_Id { get; set; }
 
         [JsonPropertyName("academic_year_id")]
-        public int Academic_Year_Id { get; set; }
+        public int? Academic_Year_Id { get; set; }
 
         [JsonPropertyName("class_grade")]
-        public string Class_Grade { get; set; }
+        public string? Class_Grade { get; set; }
 
         [JsonPropertyName("school_name")]
-        public string School_Name { get; set; }
+        public string? School_Name { get; set; }
 
         [JsonPropertyName("attendance_percentage")]
         public decimal? Attendance_Percentage { get; set; }
@@ -134,19 +134,19 @@ namespace StudenthubAPI.BO
         public decimal? Result_Percentage { get; set; }
 
         [JsonPropertyName("caste_category")]
-        public string Caste_Category { get; set; }
+        public string? Caste_Category { get; set; }
 
         [JsonPropertyName("id_proof_type")]
-        public string Id_Proof_Type { get; set; }
+        public string? Id_Proof_Type { get; set; }
 
         [JsonPropertyName("cluster")]
-        public string Cluster { get; set; }
+        public string? Cluster { get; set; }
 
         [JsonPropertyName("program")]
-        public string Program { get; set; }
+        public string? Program { get; set; }
 
         [JsonPropertyName("academic_year_name")]
-        public string AcademicYearName { get; set; }
+        public string? AcademicYearName { get; set; }
 
         [JsonPropertyName("academic_year_is_current")]
         public bool AcademicYearIsCurrent { get; set; }
@@ -185,16 +185,16 @@ namespace StudenthubAPI.BO
         public int? IDProofTypeID { get; set; }
 
         [JsonPropertyName("id_proof_number")]
-        public string IDNumber { get; set; }
+        public string? IDNumber { get; set; }
 
         [JsonPropertyName("address")]
-        public string Address { get; set; }
+        public string? Address { get; set; }
 
         [JsonPropertyName("city")]
-        public string City { get; set; }
+        public string? City { get; set; }
 
         [JsonPropertyName("state")]
-        public string State { get; set; }
+        public string? State { get; set; }
 
         [JsonPropertyName("caste_category_id")]
         public int? CasteID { get; set; }
@@ -236,16 +236,16 @@ namespace StudenthubAPI.BO
         public int? IDProofTypeID { get; set; }
 
         [JsonPropertyName("id_proof_number")]
-        public string IDNumber { get; set; }
+        public string? IDNumber { get; set; }
 
         [JsonPropertyName("address")]
-        public string Address { get; set; }
+        public string? Address { get; set; }
 
         [JsonPropertyName("city")]
-        public string City { get; set; }
+        public string? City { get; set; }
 
         [JsonPropertyName("state")]
-        public string State { get; set; }
+        public string? State { get; set; }
 
         [JsonPropertyName("casteID")]
         public int? CasteID { get; set; }
@@ -1086,6 +1086,12 @@ namespace StudenthubAPI.BO
         public string Student_Code { get; set; }
     }
 
+    //public class GradeBO
+    //{
+    //    [JsonPropertyName("name")]
+    //    public string Name { get; set; }
+    //}
+
 
     // =============================================
     // DONATION BO
@@ -1504,6 +1510,8 @@ namespace StudenthubAPI.BO
         //[JsonPropertyName("cluster_name")]
         public string ClusterName { get; set; }
 
+        public string LearningCentreName { get; set; }
+
         //[JsonPropertyName("backup_teacher_name")]
         public string BackupTeacherName { get; set; }
 
@@ -1511,7 +1519,7 @@ namespace StudenthubAPI.BO
         public int MissedDays { get; set; }
     }
 
-    public class ClusterNeedingAttentionBO
+    public class LearningCentreNeedingAttentionBO
     {
         //[JsonPropertyName("teacher_name")]
         public string TeacherName { get; set; }
@@ -1521,6 +1529,8 @@ namespace StudenthubAPI.BO
 
         //[JsonPropertyName("cluster_name")]
         public string ClusterName { get; set; }
+
+        public string LearningCentreName { get; set; }
 
         //[JsonPropertyName("missed_updates")]
         public int MissedUpdates { get; set; }
@@ -1543,6 +1553,8 @@ namespace StudenthubAPI.BO
         //[JsonPropertyName("cluster_name")]
         public string ClusterName { get; set; }
 
+        public string LearningCentreName { get; set; }
+
         //[JsonPropertyName("present_count")]
         public int PresentCount { get; set; }
 
@@ -1550,31 +1562,31 @@ namespace StudenthubAPI.BO
         public int AbsentCount { get; set; }
     }
 
-    public class ClusterPerformanceBO
+    public class LearningCentrePerformanceBO
     {
         //[JsonPropertyName("performance_type")]
         public string PerformanceType { get; set; }
 
         //[JsonPropertyName("cluster_name")]
-        public string ClusterName { get; set; }
+        public string LearningCentreName { get; set; }
 
         //[JsonPropertyName("attendance_percentage")]
         public int AttendancePercentage { get; set; }
     }
 
-    public class ClusterPerformanceResponseBO
+    public class LearningCentrePerformanceResponseBO
     {
         //[JsonPropertyName("best_clusters")]
-        public List<ClusterPerformanceItemBO> BestClusters { get; set; }
+        public List<LearningCentrePerformanceItemBO> BestLearningCentres { get; set; }
 
         //[JsonPropertyName("worst_clusters")]
-        public List<ClusterPerformanceItemBO> WorstClusters { get; set; }
+        public List<LearningCentrePerformanceItemBO> WorstLearningCentres { get; set; }
     }
 
-    public class ClusterPerformanceItemBO
+    public class LearningCentrePerformanceItemBO
     {
         //[JsonPropertyName("cluster_name")]
-        public string ClusterName { get; set; }
+        public string LearningCentreName { get; set; }
 
         //[JsonPropertyName("attendance_percentage")]
         public int AttendancePercentage { get; set; }
@@ -1908,50 +1920,35 @@ namespace StudenthubAPI.BO
         public string SenderEmail { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+        public int OtpExpiryMinutes { get; set; }
     }
 
-    public class VerificationOTP
+    public class PasswordResetToken
     {
         public int Id { get; set; }
         public string Email { get; set; }
-        public string OtpCode { get; set; }
+        public string Token { get; set; }
         public DateTime ExpiresAt { get; set; }
         public bool IsUsed { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
-    public class VerifyOTPRequest
+    public class SendResetLinkRequest
     {
-        [Required(ErrorMessage = "Email is required")]
-        [EmailAddress(ErrorMessage = "Invalid email format")]
         public string Email { get; set; }
-
-        [Required(ErrorMessage = "OTP is required")]
-        [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP must be 6 digits")]
-        public string Otp { get; set; }
     }
 
-    public class ResetPasswordRequest
+    public class ValidateResetTokenRequest
     {
-        [Required(ErrorMessage = "Email is required")]
-        [EmailAddress(ErrorMessage = "Invalid email format")]
         public string Email { get; set; }
+        public string Token { get; set; }
+    }
 
-        [Required(ErrorMessage = "OTP is required")]
-        [RegularExpression(@"^\d{6}$", ErrorMessage = "OTP must be 6 digits")]
-        public string Otp { get; set; }
-
-        [Required(ErrorMessage = "Password is required")]
-        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 100 characters")]
+    public class ResetPasswordWithTokenRequest
+    {
+        public string Email { get; set; }
+        public string Token { get; set; }
         public string Password { get; set; }
     }
-
-    public class SendResetOtpRequest
-    {
-        [Required(ErrorMessage = "Email is required")]
-        [EmailAddress(ErrorMessage = "Invalid email format")]
-        public string Email { get; set; }
-    }
-
 
 }

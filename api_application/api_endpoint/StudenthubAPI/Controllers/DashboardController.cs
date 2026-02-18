@@ -367,16 +367,17 @@ namespace StudenthubAPI.Controllers
         /// </summary>
         [Authorize]
         [HttpGet("SummaryStats")]
-        public async Task<IActionResult> GetSummaryStats([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null)
+        public async Task<IActionResult> GetSummaryStats([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int? learningCentreId = null)
         {
             try
             {
                 var result = _dataContext.Set<SummaryStatsBO>()
-                    .FromSqlRaw("EXEC spDashboard_GetSummaryStats @StartDate, @EndDate, @ProgramId, @ClusterId",
+                    .FromSqlRaw("EXEC spDashboard_GetSummaryStats @StartDate, @EndDate, @ProgramId, @ClusterId, @LearningCentreId",
                         new SqlParameter("@StartDate", startDate.Date),
                         new SqlParameter("@EndDate", endDate.Date),
                         new SqlParameter("@ProgramId", (object)programId ?? DBNull.Value),
-                        new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value))
+                        new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value),
+                        new SqlParameter("@LearningCentreId", (object)learningCentreId ?? DBNull.Value))
                     .AsNoTracking()
                     .AsEnumerable()
                     .FirstOrDefault();
@@ -423,7 +424,7 @@ namespace StudenthubAPI.Controllers
         /// </summary>
         [Authorize]
         [HttpGet("AttendanceStats")]
-        public async Task<IActionResult> GetAttendanceStats([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null)
+        public async Task<IActionResult> GetAttendanceStats([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int? learningCentreId = null)
         {
             try
             {
@@ -438,6 +439,7 @@ namespace StudenthubAPI.Controllers
                 cmd.Parameters.AddWithValue("@EndDate", endDate.Date);
                 cmd.Parameters.AddWithValue("@ProgramId", (object)programId ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@ClusterId", (object)clusterId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@LearningCentreId", (object)learningCentreId ?? DBNull.Value);
 
                 var reader = await cmd.ExecuteReaderAsync();
 
@@ -488,16 +490,17 @@ namespace StudenthubAPI.Controllers
         /// </summary>
         [Authorize]
         [HttpGet("TeachersUnavailable")]
-        public async Task<IActionResult> GetTeachersUnavailable([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null)
+        public async Task<IActionResult> GetTeachersUnavailable([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int? learningCentreId = null)
         {
             try
             {
                 var result = await _dataContext.Set<TeacherUnavailableBO>()
-                    .FromSqlRaw("EXEC spDashboard_GetTeachersUnavailable @StartDate, @EndDate, @ProgramId, @ClusterId",
+                    .FromSqlRaw("EXEC spDashboard_GetTeachersUnavailable @StartDate, @EndDate, @ProgramId, @ClusterId, @LearningCentreId",
                         new SqlParameter("@StartDate", startDate.Date),
                         new SqlParameter("@EndDate", endDate.Date),
                         new SqlParameter("@ProgramId", (object)programId ?? DBNull.Value),
-                        new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value))
+                        new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value),
+                        new SqlParameter("@LearningCentreId", (object)learningCentreId ?? DBNull.Value))
                     .AsNoTracking()
                     .ToListAsync();
 
@@ -514,16 +517,17 @@ namespace StudenthubAPI.Controllers
         /// </summary>
         [Authorize]
         [HttpGet("ClustersNeedingAttention")]
-        public async Task<IActionResult> GetClustersNeedingAttention([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int poorAttendanceThreshold = 75)
+        public async Task<IActionResult> GetClustersNeedingAttention([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int? learningCentreId = null, [FromQuery] int poorAttendanceThreshold = 75)
         {
             try
             {
-                var result = await _dataContext.Set<ClusterNeedingAttentionBO>()
-                    .FromSqlRaw("EXEC spDashboard_GetClustersNeedingAttention @StartDate, @EndDate, @ProgramId, @ClusterId, @PoorAttendanceThreshold",
+                var result = await _dataContext.Set<LearningCentreNeedingAttentionBO>()
+                    .FromSqlRaw("EXEC spDashboard_GetLearningCentresNeedingAttention @StartDate, @EndDate, @ProgramId, @ClusterId, @LearningCentreId, @PoorAttendanceThreshold",
                         new SqlParameter("@StartDate", startDate.Date),
                         new SqlParameter("@EndDate", endDate.Date),
                         new SqlParameter("@ProgramId", (object)programId ?? DBNull.Value),
                         new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value),
+                        new SqlParameter("@LearningCentreId", (object)learningCentreId ?? DBNull.Value),
                         new SqlParameter("@PoorAttendanceThreshold", poorAttendanceThreshold))
                     .AsNoTracking()
                     .ToListAsync();
@@ -541,16 +545,17 @@ namespace StudenthubAPI.Controllers
         /// </summary>
         [Authorize]
         [HttpGet("MostAbsentStudents")]
-        public async Task<IActionResult> GetMostAbsentStudents([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int limit = 5)
+        public async Task<IActionResult> GetMostAbsentStudents([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int? learningCentreId = null, [FromQuery] int limit = 5)
         {
             try
             {
                 var result = await _dataContext.Set<AbsentStudentBO>()
-                    .FromSqlRaw("EXEC spDashboard_GetMostAbsentStudents @StartDate, @EndDate, @ProgramId, @ClusterId, @Limit",
+                    .FromSqlRaw("EXEC spDashboard_GetMostAbsentStudents @StartDate, @EndDate, @ProgramId, @ClusterId, @LearningCentreId, @Limit",
                         new SqlParameter("@StartDate", startDate.Date),
                         new SqlParameter("@EndDate", endDate.Date),
                         new SqlParameter("@ProgramId", (object)programId ?? DBNull.Value),
                         new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value),
+                        new SqlParameter("@LearningCentreId", (object)learningCentreId ?? DBNull.Value),
                         new SqlParameter("@Limit", limit))
                     .AsNoTracking()
                     .ToListAsync();
@@ -567,39 +572,40 @@ namespace StudenthubAPI.Controllers
         /// Get cluster performance (best and worst performers)
         /// </summary>
         [Authorize]
-        [HttpGet("ClusterPerformance")]
-        public async Task<IActionResult> GetClusterPerformance([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int limit = 5)
+        [HttpGet("LearningCentrePerformance")]
+        public async Task<IActionResult> GetLearningCentrePerformance([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int? learningCentreId = null, [FromQuery] int limit = 5)
         {
             try
             {
-                var data = await _dataContext.Set<ClusterPerformanceBO>()
+                var data = await _dataContext.Set<LearningCentrePerformanceBO>()
                     .FromSqlRaw(
-                        "EXEC spDashboard_GetClusterPerformance @StartDate, @EndDate, @ProgramId, @ClusterId, @Limit",
+                        "EXEC spDashboard_GetLearningCentrePerformance @StartDate, @EndDate, @ProgramId, @ClusterId, @LearningCentreId, @Limit",
                         new SqlParameter("@StartDate", startDate.Date),
                         new SqlParameter("@EndDate", endDate.Date),
                         new SqlParameter("@ProgramId", (object)programId ?? DBNull.Value),
                         new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value),
+                        new SqlParameter("@LearningCentreId", (object)learningCentreId ?? DBNull.Value),
                         new SqlParameter("@Limit", limit)
                     )
                     .AsNoTracking()
                     .ToListAsync();
 
-                var result = new ClusterPerformanceResponseBO
+                var result = new LearningCentrePerformanceResponseBO
                 {
-                    BestClusters = data
+                    BestLearningCentres = data
                         .Where(x => x.PerformanceType == "BEST")
-                        .Select(x => new ClusterPerformanceItemBO
+                        .Select(x => new LearningCentrePerformanceItemBO
                         {
-                            ClusterName = x.ClusterName,
+                            LearningCentreName = x.LearningCentreName,
                             AttendancePercentage = x.AttendancePercentage
                         })
                         .ToList(),
 
-                    WorstClusters = data
+                    WorstLearningCentres = data
                         .Where(x => x.PerformanceType == "WORST")
-                        .Select(x => new ClusterPerformanceItemBO
+                        .Select(x => new LearningCentrePerformanceItemBO
                         {
-                            ClusterName = x.ClusterName,
+                            LearningCentreName = x.LearningCentreName,
                             AttendancePercentage = x.AttendancePercentage
                         })
                         .ToList()
@@ -622,16 +628,17 @@ namespace StudenthubAPI.Controllers
         /// </summary>
         [Authorize]
         [HttpGet("ProgramWiseStudents")]
-        public async Task<IActionResult> GetProgramWiseStudents([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null)
+        public async Task<IActionResult> GetProgramWiseStudents([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? programId = null, [FromQuery] int? clusterId = null, [FromQuery] int? learningCentreId = null)
         {
             try
             {
                 var result = await _dataContext.Set<ProgramWiseStudentBO>()
-                    .FromSqlRaw("EXEC spDashboard_GetProgramWiseStudents @StartDate, @EndDate, @ProgramId, @ClusterId",
+                    .FromSqlRaw("EXEC spDashboard_GetProgramWiseStudents @StartDate, @EndDate, @ProgramId, @ClusterId, @LearningCentreId",
                         new SqlParameter("@StartDate", startDate.Date),
                         new SqlParameter("@EndDate", endDate.Date),
                         new SqlParameter("@ProgramId", (object)programId ?? DBNull.Value),
-                        new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value))
+                        new SqlParameter("@ClusterId", (object)clusterId ?? DBNull.Value),
+                        new SqlParameter("@LearningCentreId", (object)learningCentreId ?? DBNull.Value))
                     .AsNoTracking()
                     .ToListAsync();
 

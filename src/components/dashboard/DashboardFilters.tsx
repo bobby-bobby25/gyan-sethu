@@ -22,10 +22,13 @@ interface DashboardFiltersProps {
   onDateRangeChange: (range: { from: Date; to: Date }) => void;
   programs: { id: string; name: string }[];
   clusters: { id: string; name: string }[];
+  learningCentres: { id: number; name: string }[];
   selectedProgramId?: string;
   selectedClusterId?: string;
+  selectedLearningCentreId?: string;
   onProgramChange: (programId?: string) => void;
   onClusterChange: (clusterId?: string) => void;
+  onLearningCentreChange: (learningCentreId?: string) => void;
 }
 
 export function DashboardFilters({
@@ -33,10 +36,13 @@ export function DashboardFilters({
   onDateRangeChange,
   programs,
   clusters,
+  learningCentres,
   selectedProgramId,
   selectedClusterId,
+  selectedLearningCentreId,
   onProgramChange,
   onClusterChange,
+  onLearningCentreChange,
 }: DashboardFiltersProps) {
   const handleDateSelect = (range: DateRange | undefined) => {
     if (range?.from && range?.to) {
@@ -138,6 +144,36 @@ export function DashboardFilters({
             size="sm"
             className="h-7 w-7 p-0"
             onClick={() => onClusterChange(undefined)}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+
+      {/* Learning Centre Filter */}
+      <div className="flex items-center gap-2">
+        <Select
+          value={selectedLearningCentreId || "all"}
+          onValueChange={(value) => onLearningCentreChange && onLearningCentreChange(value === "all" ? undefined : value)}
+        >
+          <SelectTrigger className="w-[160px] h-9">
+            <SelectValue placeholder="All Learning Centres" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Learning Centres</SelectItem>
+            {learningCentres?.map((learningCentre) => (
+              <SelectItem key={learningCentre.id} value={String(learningCentre.id)}>
+                {learningCentre.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedLearningCentreId && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => onLearningCentreChange && onLearningCentreChange(undefined)}
           >
             <X className="h-3 w-3" />
           </Button>

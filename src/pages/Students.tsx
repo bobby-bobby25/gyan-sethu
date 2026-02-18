@@ -38,7 +38,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useStudents, useClusters, usePrograms, type StudentWithDetails } from "@/hooks/useStudents";
+import { useStudents, useAcademicYears, type StudentWithDetails } from "@/hooks/useStudents";
+import { useLearningCentresHook } from "@/hooks/useLearningCentres";
+import { useClusters } from "@/hooks/useClusters";
+import { usePrograms } from "@/hooks/usePrograms";
 import { StudentFormDialog } from "@/components/students/StudentFormDialog";
 import { DeleteStudentDialog } from "@/components/students/DeleteStudentDialog";
 import { StudentDetailDialog } from "@/components/students/StudentDetailDialog";
@@ -46,6 +49,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const Students = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
+  const [selectedLearningCentre, setSelectedLearningCentre] = useState<string>("all");
   const [selectedCluster, setSelectedCluster] = useState<string>("all");
   const [selectedProgram, setSelectedProgram] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("active");
@@ -54,15 +59,20 @@ const Students = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [detailMode, setDetailMode] = useState<"details" | "academic" | "family">("details");
   const [selectedStudent, setSelectedStudent] = useState<StudentWithDetails | null>(null);
 
   // Fetch data
   const { data: students, isLoading, error } = useStudents({
     search: searchQuery || undefined,
+    academicYearId: selectedAcademicYear !== "all" ? parseInt(selectedAcademicYear) : undefined,
+    learningCentreId: selectedLearningCentre !== "all" ? parseInt(selectedLearningCentre) : undefined,
     clusterId: selectedCluster !== "all" ? selectedCluster : undefined,
     programId: selectedProgram !== "all" ? selectedProgram : undefined,
     isActive: selectedStatus === "active" ? true : selectedStatus === "inactive" ? false : undefined,
   });
+  const { data: academicYears } = useAcademicYears();
+  const { data: learningCentres } = useLearningCentresHook();
   const { data: clusters } = useClusters();
   const { data: programs } = usePrograms();
 
@@ -83,6 +93,19 @@ const Students = () => {
 
   const handleViewDetails = (student: StudentWithDetails) => {
     setSelectedStudent(student);
+    setDetailMode("details");
+    setDetailOpen(true);
+  };
+
+  const handleViewAcademicRecords = (student: StudentWithDetails) => {
+    setSelectedStudent(student);
+    setDetailMode("academic");
+    setDetailOpen(true);
+  };
+
+  const handleViewFamilyMembers = (student: StudentWithDetails) => {
+    setSelectedStudent(student);
+    setDetailMode("family");
     setDetailOpen(true);
   };
 
@@ -130,6 +153,32 @@ const Students = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Academic Year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {academicYears?.map((year) => (
+                  <SelectItem key={year.id} value={String(year.id)}>
+                    {year.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedLearningCentre} onValueChange={setSelectedLearningCentre}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Learning Centre" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Learning Centres</SelectItem>
+                {learningCentres?.map((lc) => (
+                  <SelectItem key={lc.id} value={String(lc.id)}>
+                    {lc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={selectedCluster} onValueChange={setSelectedCluster}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Cluster" />
@@ -309,7 +358,7 @@ const Students = () => {
                               variant="ghost"
                               size="icon-sm"
                               title="Academic Records"
-                              onClick={() => handleViewDetails(student)}
+                              onClick={() => handleViewAcademicRecords(student)}
                             >
                               <GraduationCap className="h-4 w-4" />
                             </Button>
@@ -317,7 +366,7 @@ const Students = () => {
                               variant="ghost"
                               size="icon-sm"
                               title="Family Members"
-                              onClick={() => handleViewDetails(student)}
+                              onClick={() => handleViewFamilyMembers(student)}
                             >
                               <Users className="h-4 w-4" />
                             </Button>
@@ -375,6 +424,7 @@ const Students = () => {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         student={selectedStudent}
+        mode={detailMode}
       />
     </DashboardLayout>
   );

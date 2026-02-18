@@ -94,6 +94,26 @@ namespace StudenthubAPI.Controllers
             }
         }
 
+        //[Authorize]
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllGrades([FromQuery] bool isActive = true)
+        //{
+        //    try
+        //    {
+        //        var classGrades = await _dataContext.Set<GradeBO>()
+        //            .FromSqlRaw("EXEC sp_GetAllGrades @IsActive",
+        //                new SqlParameter("@IsActive", isActive))
+        //            .AsNoTracking()
+        //            .ToListAsync();
+
+        //        return Ok(classGrades);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new { message = "An error occurred while retrieving clusters", error = ex.Message });
+        //    }
+        //}
+
         #endregion
 
         #region Create/Update Operation

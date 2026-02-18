@@ -31,6 +31,8 @@ namespace StudenthubAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllStudents(
             string? search = null,
+            [FromQuery] int? academicYearId = null,
+            [FromQuery] int? learningCentreId = null,
             [FromQuery] int? clusterId = null,
             [FromQuery] int? programId = null,
             [FromQuery] bool isActive = true)
@@ -38,8 +40,10 @@ namespace StudenthubAPI.Controllers
             try
             {
                 var students = await _dataContext.Set<StudentBO>()
-                    .FromSqlRaw("EXEC sp_GetAllStudents @SearchTerm, @ClusterID, @ProgramID, @IsActive",
+                    .FromSqlRaw("EXEC sp_GetAllStudents @SearchTerm, @AcademicYearID, @LearningCentreID, @ClusterID, @ProgramID, @IsActive",
                         new SqlParameter("@SearchTerm", (object)search ?? DBNull.Value),
+                        new SqlParameter("@AcademicYearID", (object)academicYearId ?? DBNull.Value),
+                        new SqlParameter("@LearningCentreID", (object)learningCentreId ?? DBNull.Value),
                         new SqlParameter("@ClusterID", (object)clusterId ?? DBNull.Value),
                         new SqlParameter("@ProgramID", (object)programId ?? DBNull.Value),
                         new SqlParameter("@IsActive", isActive))

@@ -324,6 +324,8 @@ GO
 -- Get all students with nested data
 CREATE OR ALTER PROCEDURE [dbo].[sp_GetAllStudents]
     @SearchTerm NVARCHAR(255) = NULL,
+	@AcademicYearID INT = NULL,
+	@LearningCentreID INT = NULL,
     @ClusterID INT = NULL,
     @ProgramID INT = NULL,
     @IsActive BIT = 1
@@ -378,6 +380,8 @@ BEGIN
     LEFT JOIN [dbo].[AcademicYears] ay ON sar.[AcademicYearID] = ay.[AcademicYearID]
     WHERE s.[IsActive] = @IsActive
         AND (@SearchTerm IS NULL OR s.[Name] LIKE '%' + @SearchTerm + '%' OR s.[StudentCode] LIKE '%' + @SearchTerm + '%')
+		AND (@AcademicYearID IS NULL OR sar.[AcademicYearID] = @AcademicYearID)
+		AND (@LearningCentreID IS NULL OR sar.[LearningCentreID] = @LearningCentreID)
         AND (@ClusterID IS NULL OR sar.[ClusterID] = @ClusterID)
         AND (@ProgramID IS NULL OR sar.[ProgramID] = @ProgramID)
     ORDER BY s.[Name];
@@ -971,6 +975,26 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.sp_GetAllGrades
+    @IsActive BIT = NULL,
+	@LearningCentreID INT = NULL,
+	@ProgramID INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT DISTINCT 
+	sar.ClassGrade AS NAME
+    FROM dbo.StudentAcademicRecords sar
+	INNER JOIN Students s ON sar.StudentID = s.StudentID
+    WHERE (@IsActive IS NULL OR sar.[IsActive] = @IsActive)
+		AND (@ProgramId IS NULL OR sar.ProgramID = @ProgramId)
+        AND (@LearningCentreId IS NULL OR sar.LearningCentreID = @LearningCentreId)
+    ORDER BY sar.ClassGrade;
+END;
+GO
+
+
 -- =============================================
 -- TEACHERS MANAGEMENT STORED PROCEDURES
 -- =============================================
@@ -1280,10 +1304,10 @@ BEGIN
     SELECT 
         c.[ClusterID] AS [Id],
         c.[Name] AS [Name],
-        c.[Address] AS [Address],
-        c.[City] AS [City],
-        c.[State] AS [State],
-		c.[Notes] AS [Notes],
+        ISNULL(c.[Address],'') AS [Address],
+        ISNULL(c.[City],'') AS [City],
+        ISNULL(c.[State],'') AS [State],
+		ISNULL(c.[Notes],'') AS [Notes],
         c.[CreatedAt] AS [CreatedAt],
         c.[UpdatedAt] AS [UpdatedAt],
         c.[IsActive] AS [IsActive]
@@ -1463,7 +1487,7 @@ BEGIN
     SELECT 
         p.[ProgramID] AS [Id],
         p.[Name] AS [Name],
-        p.[Description] AS [Description],
+        ISNULL(p.[Description],'') AS [Description],
         p.[CreatedAt] AS [CreatedAt],
         p.[UpdatedAt] AS [UpdatedAt],
         p.[IsActive] AS [IsActive]
@@ -3215,7 +3239,8 @@ CREATE PROCEDURE spDashboard_GetSummaryStats
     @StartDate DATE,
     @EndDate DATE,
     @ProgramId INT = NULL,
-    @ClusterId INT = NULL
+    @ClusterId INT = NULL,
+	@LearningCentreId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -3233,43 +3258,54 @@ BEGIN
           AND sar.IsActive = 1
           AND (@ProgramId IS NULL OR sar.ProgramID = @ProgramId)
           AND (@ClusterId IS NULL OR sar.ClusterID = @ClusterId)
+          AND (@LearningCentreId IS NULL OR sar.LearningCentreID = @LearningCentreId)
         GROUP BY p.ProgramID, p.Name
     )
 
     SELECT
         -- Total active students
-        (SELECT COUNT(DISTINCT sar.StudentID)
+        (SELECT ISNULL(COUNT(DISTINCT sar.StudentID),0)
          FROM StudentAcademicRecords sar
          INNER JOIN Students s ON sar.StudentID = s.StudentID
          WHERE s.IsActive = 1
            AND sar.IsActive = 1
            AND (@ProgramId IS NULL OR sar.ProgramID = @ProgramId)
            AND (@ClusterId IS NULL OR sar.ClusterID = @ClusterId)
+           AND (@LearningCentreId IS NULL OR sar.LearningCentreID = @LearningCentreId)
         ) AS ActiveStudents,
 
         -- Program wise students (ProgramID|ProgramName|StudentCount)
-        (
+        ISNULL((
             SELECT STRING_AGG(
                 CONCAT(ProgramID, '|', ProgramName, '|', StudentCount),
                 ','
             )
             FROM ProgramStudentCounts
-        ) AS ProgramWiseStudentsRaw,
+        ),'') AS ProgramWiseStudentsRaw,
 
         -- Teachers
         (SELECT COUNT(DISTINCT TeacherID)
-         FROM TeacherAssignments
+         FROM TeacherAssignments ta
          WHERE IsActive = 1
+		   AND (@ProgramId IS NULL OR ta.ProgramID = @ProgramId)
+           AND (@ClusterId IS NULL OR ta.ClusterID = @ClusterId)
+           AND (@LearningCentreId IS NULL OR ta.LearningCentreID = @LearningCentreId)
         ) AS TotalTeachers,
 
         (SELECT COUNT(DISTINCT TeacherID)
-         FROM TeacherAssignments
+         FROM TeacherAssignments ta
          WHERE IsActive = 1 AND Role = 'main'
+		   AND (@ProgramId IS NULL OR ta.ProgramID = @ProgramId)
+           AND (@ClusterId IS NULL OR ta.ClusterID = @ClusterId)
+           AND (@LearningCentreId IS NULL OR ta.LearningCentreID = @LearningCentreId)
         ) AS MainTeachers,
 
         (SELECT COUNT(DISTINCT TeacherID)
-         FROM TeacherAssignments
+         FROM TeacherAssignments ta
          WHERE IsActive = 1 AND Role = 'backup'
+		   AND (@ProgramId IS NULL OR ta.ProgramID = @ProgramId)
+           AND (@ClusterId IS NULL OR ta.ClusterID = @ClusterId)
+           AND (@LearningCentreId IS NULL OR ta.LearningCentreID = @LearningCentreId)
         ) AS BackupTeachers,
 
         0 AS Volunteers;
@@ -3289,7 +3325,8 @@ CREATE PROCEDURE spDashboard_GetAttendanceStats
     @StartDate DATE,
     @EndDate DATE,
     @ProgramId INT = NULL,
-    @ClusterId INT = NULL
+    @ClusterId INT = NULL,
+	@LearningCentreId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -3310,7 +3347,8 @@ BEGIN
     WHERE ar.AttendanceDate >= @StartDate 
         AND ar.AttendanceDate <= @EndDate
         AND (@ProgramId IS NULL OR ar.ProgramID = @ProgramId)
-        AND (@ClusterId IS NULL OR ar.ClusterID = @ClusterId);
+        AND (@ClusterId IS NULL OR ar.ClusterID = @ClusterId)
+		AND (@LearningCentreId IS NULL OR ar.LearningCentreID = @LearningCentreId);
 
     -- Get trend data
     SELECT 
@@ -3323,6 +3361,7 @@ BEGIN
         AND ar.AttendanceDate <= @EndDate
         AND (@ProgramId IS NULL OR ar.ProgramID = @ProgramId)
         AND (@ClusterId IS NULL OR ar.ClusterID = @ClusterId)
+        AND (@LearningCentreId IS NULL OR ar.LearningCentreID = @LearningCentreId)
     GROUP BY ar.AttendanceDate
     ORDER BY ar.AttendanceDate;
 END;
@@ -3340,7 +3379,8 @@ CREATE PROCEDURE spDashboard_GetTeachersUnavailable
     @StartDate DATE,
     @EndDate DATE,
     @ProgramId INT = NULL,
-    @ClusterId INT = NULL
+    @ClusterId INT = NULL,
+	@LearningCentreId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -3353,6 +3393,7 @@ BEGIN
             ta_main.ClusterID,
             p.Name AS ProgramName,
             c.Name AS ClusterName,
+			lc.Name AS LearningCentreName,
             ta_backup.TeacherID AS BackupTeacherId,
             t_backup.Name AS BackupTeacherName
         FROM TeacherAssignments ta_main
@@ -3362,12 +3403,14 @@ BEGIN
         INNER JOIN Teachers t_backup ON ta_backup.TeacherID = t_backup.TeacherID
         INNER JOIN Programs p ON ta_main.ProgramID = p.ProgramID
         INNER JOIN Clusters c ON ta_main.ClusterID = c.ClusterID
+        INNER JOIN LearningCentres lc ON ta_main.LearningCentreID = lc.LearningCentreID
         WHERE ta_main.Role = 'main' 
             AND ta_backup.Role = 'backup'
             AND ta_main.IsActive = 1 
             AND ta_backup.IsActive = 1
             AND (@ProgramId IS NULL OR ta_main.ProgramID = @ProgramId)
             AND (@ClusterId IS NULL OR ta_main.ClusterID = @ClusterId)
+            AND (@LearningCentreId IS NULL OR ta_main.LearningCentreID = @LearningCentreId)
     ),
     UnavailableDays AS (
         SELECT 
@@ -3375,6 +3418,7 @@ BEGIN
             mbt.MainTeacherName,
             mbt.ProgramName,
             mbt.ClusterName,
+			mbt.LearningCentreName,
             mbt.BackupTeacherName,
             COUNT(DISTINCT ar.AttendanceDate) AS MissedDays
         FROM MainBackupTeachers mbt
@@ -3384,7 +3428,7 @@ BEGIN
             AND ar.AttendanceDate >= @StartDate 
             AND ar.AttendanceDate <= @EndDate
         GROUP BY mbt.MainTeacherId, mbt.MainTeacherName, mbt.ProgramName, 
-                 mbt.ClusterName, mbt.BackupTeacherName
+                 mbt.ClusterName, mbt.BackupTeacherName, mbt.LearningCentreName
     )
     SELECT * FROM UnavailableDays
     ORDER BY MissedDays DESC;
@@ -3395,15 +3439,16 @@ GO
 -- 4. GET CLUSTERS NEEDING ATTENTION
 -- Returns: Clusters with missed updates or poor attendance
 -- =============================================
-IF EXISTS(SELECT 1 FROM SYS.PROCEDURES WHERE NAME='spDashboard_GetClustersNeedingAttention')
-DROP PROCEDURE spDashboard_GetClustersNeedingAttention
+IF EXISTS(SELECT 1 FROM SYS.PROCEDURES WHERE NAME='spDashboard_GetLearningCentresNeedingAttention')
+DROP PROCEDURE spDashboard_GetLearningCentresNeedingAttention
 GO
 
-CREATE PROCEDURE spDashboard_GetClustersNeedingAttention
+CREATE PROCEDURE spDashboard_GetLearningCentresNeedingAttention
     @StartDate DATE,
     @EndDate DATE,
     @ProgramId INT = NULL,
     @ClusterId INT = NULL,
+	@LearningCentreId INT = NULL,
     @PoorAttendanceThreshold INT = 75
 AS
 BEGIN
@@ -3422,8 +3467,10 @@ BEGIN
             t.Name AS TeacherName,
             ta.ProgramID,
             ta.ClusterID,
+			ta.LearningCentreID,
             p.Name AS ProgramName,
             c.Name AS ClusterName,
+			lc.Name AS LearningCentreName,
             COUNT(DISTINCT ar.AttendanceDate) AS DatesWithAttendance,
             CAST(ROUND(CAST(SUM(CASE WHEN ar.StatusID = @PresentStatusId THEN 1 ELSE 0 END) AS FLOAT) /
                        NULLIF(COUNT(ar.AttendanceRecordID), 0) * 100, 0) AS INT) AS AttendancePercentage
@@ -3431,20 +3478,24 @@ BEGIN
         INNER JOIN Teachers t ON ta.TeacherID = t.TeacherID
         INNER JOIN Programs p ON ta.ProgramID = p.ProgramID
         INNER JOIN Clusters c ON ta.ClusterID = c.ClusterID
+        INNER JOIN LearningCentres lc ON ta.LearningCentreID = lc.LearningCentreID
         LEFT JOIN AttendanceRecords ar ON ta.ProgramID = ar.ProgramID 
             AND ta.ClusterID = ar.ClusterID
+			AND ta.LearningCentreID = ar.LearningCentreID
             AND ar.AttendanceDate >= @StartDate 
             AND ar.AttendanceDate <= @EndDate
         WHERE ta.Role = 'main'
             AND ta.IsActive = 1
             AND (@ProgramId IS NULL OR ta.ProgramID = @ProgramId)
             AND (@ClusterId IS NULL OR ta.ClusterID = @ClusterId)
-        GROUP BY ta.TeacherID, t.Name, ta.ProgramID, ta.ClusterID, p.Name, c.Name
+            AND (@LearningCentreId IS NULL OR ta.LearningCentreID = @LearningCentreId)
+        GROUP BY ta.TeacherID, t.Name, ta.ProgramID, ta.ClusterID, ta.LearningCentreID, p.Name, c.Name, lc.Name
     )
     SELECT 
         TeacherName,
         ProgramName,
         ClusterName,
+		LearningCentreName,
         (@TotalDays - ISNULL(DatesWithAttendance, 0)) AS MissedUpdates,
         ISNULL(AttendancePercentage, 0) AS AttendancePercentage
     FROM ClusterAttendance
@@ -3467,6 +3518,7 @@ CREATE PROCEDURE spDashboard_GetMostAbsentStudents
     @EndDate DATE,
     @ProgramId INT = NULL,
     @ClusterId INT = NULL,
+	@LearningCentreId INT = NULL,
     @Limit INT = 5
 AS
 BEGIN
@@ -3488,17 +3540,20 @@ BEGIN
         s.Name,
         p.Name AS ProgramName,
         c.Name AS ClusterName,
+		lc.Name AS LearningCentreName,
         SUM(CASE WHEN ar.StatusID = @PresentStatusId THEN 1 ELSE 0 END) AS PresentCount,
         SUM(CASE WHEN ar.StatusID = @AbsentStatusId THEN 1 ELSE 0 END) AS AbsentCount
     FROM AttendanceRecords ar
     INNER JOIN Students s ON ar.StudentID = s.StudentID
     INNER JOIN Programs p ON ar.ProgramID = p.ProgramID
     INNER JOIN Clusters c ON ar.ClusterID = c.ClusterID
+	INNER JOIN LearningCentres lc ON ar.LearningCentreID = lc.LearningCentreID
     WHERE ar.AttendanceDate >= @StartDate 
         AND ar.AttendanceDate <= @EndDate
         AND (@ProgramId IS NULL OR ar.ProgramID = @ProgramId)
         AND (@ClusterId IS NULL OR ar.ClusterID = @ClusterId)
-    GROUP BY ar.StudentID, s.Name, p.Name, c.Name
+        AND (@LearningCentreId IS NULL OR ar.LearningCentreID = @LearningCentreId)
+    GROUP BY ar.StudentID, s.Name, p.Name, c.Name, lc.Name
     ORDER BY AbsentCount DESC;
 END;
 GO
@@ -3507,15 +3562,16 @@ GO
 -- 6. GET CLUSTER PERFORMANCE
 -- Returns: Best and worst performing clusters
 -- =============================================
-IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = 'spDashboard_GetClusterPerformance')
-DROP PROCEDURE spDashboard_GetClusterPerformance
+IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = 'spDashboard_GetLearningCentrePerformance')
+DROP PROCEDURE spDashboard_GetLearningCentrePerformance
 GO
 
-CREATE PROCEDURE spDashboard_GetClusterPerformance
+CREATE PROCEDURE spDashboard_GetLearningCentrePerformance
     @StartDate DATE,
     @EndDate DATE,
     @ProgramId INT = NULL,
     @ClusterId INT = NULL,
+	@LearningCentreId INT = NULL,
     @Limit INT = 5
 AS
 BEGIN
@@ -3527,37 +3583,38 @@ BEGIN
     FROM AttendanceStatusTypes
     WHERE Code = 'P' AND IsActive = 1;
 
-    WITH ClusterStats AS (
+    WITH LearningCentreStats AS (
         SELECT
-            c.ClusterID,
-            c.Name AS ClusterName,
+            lc.LearningCentreID,
+            lc.Name AS learningCentreName,
             COUNT(ar.AttendanceRecordID) AS TotalCount,
             SUM(CASE WHEN ar.StatusID = @PresentStatusId THEN 1 ELSE 0 END) AS PresentCount
-        FROM Clusters c
-        INNER JOIN AttendanceRecords ar ON ar.ClusterID = c.ClusterID
+        FROM LearningCentres lc
+        INNER JOIN AttendanceRecords ar ON ar.LearningCentreID = lc.LearningCentreID
             AND ar.AttendanceDate BETWEEN @StartDate AND @EndDate
             AND (@ProgramId IS NULL OR ar.ProgramID = @ProgramId)
             AND (@ClusterId IS NULL OR ar.ClusterID = @ClusterId)
-        GROUP BY c.ClusterID, c.Name
+			AND (@LearningCentreId IS NULL OR ar.LearningCentreID = @LearningCentreId)
+        GROUP BY lc.LearningCentreID, lc.Name
         HAVING COUNT(ar.AttendanceRecordID) > 0
     ),
     Calculated AS (
         SELECT
-            ClusterName,
+            learningCentreName,
             CAST(ROUND(
                 (CAST(PresentCount AS FLOAT) / NULLIF(TotalCount, 0)) * 100, 0
             ) AS INT) AS AttendancePercentage
-        FROM ClusterStats
+        FROM LearningCentreStats
     )
     SELECT TOP (@Limit)
         'BEST' AS PerformanceType,
-        ClusterName,
+        learningCentreName,
         AttendancePercentage
     FROM Calculated
     UNION ALL
     SELECT TOP (@Limit)
         'WORST' AS PerformanceType,
-        ClusterName,
+        learningCentreName,
         AttendancePercentage
     FROM Calculated
     ORDER BY AttendancePercentage ASC;
@@ -3577,7 +3634,8 @@ CREATE PROCEDURE spDashboard_GetProgramWiseStudents
     @StartDate DATE,
     @EndDate DATE,
     @ProgramId INT = NULL,
-    @ClusterId INT = NULL
+    @ClusterId INT = NULL,
+	@LearningCentreId INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -3592,6 +3650,7 @@ BEGIN
         AND sar.IsActive = 1
         AND (@ProgramId IS NULL OR sar.ProgramID = @ProgramId)
         AND (@ClusterId IS NULL OR sar.ClusterID = @ClusterId)
+        AND (@LearningCentreId IS NULL OR sar.LearningCentreID = @LearningCentreId)
     GROUP BY p.ProgramID, p.Name
     ORDER BY [Count] DESC;
 END;

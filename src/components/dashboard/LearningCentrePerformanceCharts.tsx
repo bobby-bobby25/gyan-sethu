@@ -11,22 +11,22 @@ import {
   Tooltip,
 } from "recharts";
 
-interface ClusterPerformance {
-  clusterName: string;
+interface LearningCentrePerformance {
+  learningCentreName: string;
   attendancePercentage: number;
 }
 
-interface ClusterPerformanceChartsProps {
-  bestClusters: ClusterPerformance[] | undefined;
-  worstClusters: ClusterPerformance[] | undefined;
+interface LearningCentrePerformanceChartsProps {
+  bestLearningCentres: LearningCentrePerformance[] | undefined;
+  worstLearningCentres: LearningCentrePerformance[] | undefined;
   isLoading: boolean;
 }
 
-export function ClusterPerformanceCharts({
-  bestClusters,
-  worstClusters,
+export function LearningCentrePerformanceCharts({
+  bestLearningCentres,
+  worstLearningCentres,
   isLoading,
-}: ClusterPerformanceChartsProps) {
+}: LearningCentrePerformanceChartsProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -50,8 +50,8 @@ export function ClusterPerformanceCharts({
     );
   }
 
-  const hasBestData = bestClusters && bestClusters.length > 0;
-  const hasWorstData = worstClusters && worstClusters.length > 0;
+  const hasBestData = bestLearningCentres && bestLearningCentres.length > 0;
+  const hasWorstData = worstLearningCentres && worstLearningCentres.length > 0;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
@@ -60,7 +60,7 @@ export function ClusterPerformanceCharts({
         <CardHeader className="pb-1 pt-2 px-3">
           <CardTitle className="text-sm font-bold flex items-center gap-2 text-success">
             <TrendingUp className="h-4 w-4" />
-            Best Performing Clusters
+            Best Performing Learning Centres
           </CardTitle>
         </CardHeader>
         <CardContent className="px-2 pb-2">
@@ -68,7 +68,7 @@ export function ClusterPerformanceCharts({
             <ResponsiveContainer width="100%" height={180}>
               <BarChart
                 layout="vertical"
-                data={bestClusters}
+                data={bestLearningCentres}
                 margin={{ top: 0, right: 30, left: 5, bottom: 0 }}
               >
                 <XAxis
@@ -81,7 +81,7 @@ export function ClusterPerformanceCharts({
                 />
                 <YAxis
                   type="category"
-                  dataKey="clusterName"
+                  dataKey="learningCentreName"
                   tick={{ fontSize: 10, fill: "hsl(var(--foreground))", fontWeight: 500 }}
                   width={110}
                   axisLine={false}
@@ -98,7 +98,7 @@ export function ClusterPerformanceCharts({
                   formatter={(value: number) => [`${value}%`, "Attendance"]}
                 />
                 <Bar dataKey="attendancePercentage" radius={[0, 4, 4, 0]} maxBarSize={14}>
-                  {bestClusters?.map((_, index) => (
+                  {bestLearningCentres?.map((_, index) => (
                     <Cell key={`cell-${index}`} fill="hsl(var(--success))" />
                   ))}
                 </Bar>
@@ -117,7 +117,7 @@ export function ClusterPerformanceCharts({
         <CardHeader className="pb-1 pt-2 px-3">
           <CardTitle className="text-sm font-bold flex items-center gap-2 text-destructive">
             <TrendingDown className="h-4 w-4" />
-            Clusters Needing Improvement
+            Learning Centres Needing Improvement
           </CardTitle>
         </CardHeader>
         <CardContent className="px-2 pb-2">
@@ -125,7 +125,7 @@ export function ClusterPerformanceCharts({
             <ResponsiveContainer width="100%" height={180}>
               <BarChart
                 layout="vertical"
-                data={worstClusters}
+                data={worstLearningCentres}
                 margin={{ top: 0, right: 30, left: 5, bottom: 0 }}
               >
                 <XAxis
@@ -138,7 +138,7 @@ export function ClusterPerformanceCharts({
                 />
                 <YAxis
                   type="category"
-                  dataKey="clusterName"
+                  dataKey="learningCentreName"
                   tick={{ fontSize: 10, fill: "hsl(var(--foreground))", fontWeight: 500 }}
                   width={110}
                   axisLine={false}
@@ -155,7 +155,7 @@ export function ClusterPerformanceCharts({
                   formatter={(value: number) => [`${value}%`, "Attendance"]}
                 />
                 <Bar dataKey="attendancePercentage" radius={[0, 4, 4, 0]} maxBarSize={14}>
-                  {worstClusters?.map((entry, index) => (
+                  {worstLearningCentres?.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={entry.attendancePercentage < 70 ? "hsl(var(--destructive))" : "hsl(var(--warning))"}

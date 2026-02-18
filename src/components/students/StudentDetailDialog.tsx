@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -50,12 +50,26 @@ interface StudentDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student: StudentWithDetails | null;
+  mode?: "details" | "academic" | "family";
 }
 
 type SectionType = "academic" | "family" | "documents";
 
-export function StudentDetailDialog({ open, onOpenChange, student }: StudentDetailDialogProps) {
-  const [activeSection, setActiveSection] = useState<SectionType>("academic");
+export function StudentDetailDialog({ open, onOpenChange, student, mode = "details" }: StudentDetailDialogProps) {
+  const [activeSection, setActiveSection] = useState<SectionType>(mode === "academic" ? "academic" : mode === "family" ? "family" : "academic");
+  
+  // Update active section when mode changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      if (mode === "academic") {
+        setActiveSection("academic");
+      } else if (mode === "family") {
+        setActiveSection("family");
+      } else {
+        setActiveSection("academic");
+      }
+    }
+  }, [mode, open]);
   
   // Academic records state
   const [recordFormOpen, setRecordFormOpen] = useState(false);

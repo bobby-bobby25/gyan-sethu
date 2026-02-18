@@ -290,15 +290,12 @@ namespace StudenthubAPI.Controllers
                     if (!string.IsNullOrWhiteSpace(createTeacherBO.Email))
                     {
                         try
-                        {
-                            var resetLink = $"{_dataContext.jwtAudience}/reset-password?email={Uri.EscapeDataString(createTeacherBO.Email)}";
-                            
+                        {                            
                             var authController = new AuthController(_dataContext);
-                            await authController.SendResetPasswordEmailAsync(
-                                createTeacherBO.Email,
-                                resetLink,
-                                "30"
-                            );
+                            await authController.SendResetLink(new SendResetLinkRequest
+                            {
+                                Email = createTeacherBO.Email
+                            });
                         }
                         catch (Exception emailEx)
                         {
@@ -310,7 +307,7 @@ namespace StudenthubAPI.Controllers
                         new { message = "Teacher created successfully", teacherId = teacherId });
                 }
 
-                return BadRequest(new { message = "Failed to create teacher" });
+                return BadRequest(new { message = result });
             }
             catch (Exception ex)
             {

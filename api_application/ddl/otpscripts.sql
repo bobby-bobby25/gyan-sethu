@@ -1,36 +1,37 @@
 -- =============================================
--- OTP Verification Management Scripts
+-- Password Reset Token Management Scripts
 -- =============================================
 
--- Create VerificationOTPs Table
-IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[VerificationOTPs]') AND type in (N'U'))
+-- Create PasswordResetTokens Table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[PasswordResetTokens]') AND type in (N'U'))
 BEGIN
-    CREATE TABLE [dbo].[VerificationOTPs] (
+    CREATE TABLE [dbo].[PasswordResetTokens] (
         [Id] INT PRIMARY KEY IDENTITY(1,1),
         [Email] NVARCHAR(255) NOT NULL,
-        [OtpCode] NVARCHAR(10) NOT NULL,
+        [Token] NVARCHAR(MAX) NOT NULL,
         [ExpiresAt] DATETIME NOT NULL,
         [IsUsed] BIT NOT NULL DEFAULT 0,
         [CreatedAt] DATETIME NOT NULL DEFAULT GETUTCDATE(),
-        CONSTRAINT FK_VerificationOTPs_Email FOREIGN KEY ([Email]) 
+        CONSTRAINT FK_PasswordResetTokens_Email FOREIGN KEY ([Email]) 
             REFERENCES [dbo].[Users]([Email]) ON DELETE CASCADE
     );
     
     -- Create indexes for better query performance
-    CREATE INDEX IX_VerificationOTPs_Email ON [dbo].[VerificationOTPs]([Email]);
-    CREATE INDEX IX_VerificationOTPs_ExpiresAt ON [dbo].[VerificationOTPs]([ExpiresAt]);
+    CREATE INDEX IX_PasswordResetTokens_Email ON [dbo].[PasswordResetTokens]([Email]);
+    CREATE INDEX IX_PasswordResetTokens_ExpiresAt ON [dbo].[PasswordResetTokens]([ExpiresAt]);
 END
 GO
 
+
 -- =============================================
--- SP: Generate OTP
+-- SP: Generate Password Reset Token
 -- =============================================
--- Description: Generate a new OTP for password reset
+-- Description: Generate a password reset token and send reset link
 -- Parameters: 
 --   @Email: Email address of user requesting reset
--- Returns: Generated OTP code
+-- Returns: Generated token
 -- =============================================
-CREATE OR ALTER PROCEDURE [dbo].[spGenerateOTP]
+CREATE OR ALTER PROCEDURE [dbo].[spGeneratePasswordResetToken]
     @Email NVARCHAR(256)
 AS
 BEGIN
@@ -44,60 +45,55 @@ BEGIN
             RETURN;
         END
         
-        -- Mark previous OTPs as used
-        UPDATE [dbo].[VerificationOTPs]
+        -- Mark previous tokens as used
+        UPDATE [dbo].[PasswordResetTokens]
         SET [IsUsed] = 1
         WHERE [Email] = @Email AND [IsUsed] = 0;
         
-        -- Generate 6-digit random OTP
-        DECLARE @OtpCode NVARCHAR(10) = 
-            CAST(CAST(RAND() * 999999 AS INT) AS NVARCHAR(10));
+        -- Generate UUID token
+        DECLARE @Token NVARCHAR(MAX) = CONVERT(NVARCHAR(MAX), NEWID());
         
-        -- Pad with leading zeros if needed
-        WHILE LEN(@OtpCode) < 6
-            SET @OtpCode = '0' + @OtpCode;
+        -- Set expiry (will be consumed in C# based on app settings)
+        DECLARE @ExpiresAt DATETIME = DATEADD(MINUTE, 30, GETUTCDATE());
         
-        -- Set expiry to 15 minutes from now
-        DECLARE @ExpiresAt DATETIME = DATEADD(MINUTE, 15, GETUTCDATE());
-        
-        -- Insert new OTP
-        INSERT INTO [dbo].[VerificationOTPs] 
-            ([Email], [OtpCode], [ExpiresAt], [IsUsed], [CreatedAt])
+        -- Insert new token
+        INSERT INTO [dbo].[PasswordResetTokens] 
+            ([Email], [Token], [ExpiresAt], [IsUsed], [CreatedAt])
         VALUES 
-            (@Email, @OtpCode, @ExpiresAt, 0, GETUTCDATE());
+            (@Email, @Token, @ExpiresAt, 0, GETUTCDATE());
         
-        -- Return the OTP
-        SELECT @OtpCode AS OtpCode;
+        -- Return the token
+        SELECT @Token AS Token;
         
     END TRY
     BEGIN CATCH
-        RAISERROR('Error generating OTP', 16, 1);
+        RAISERROR('Error generating password reset token', 16, 1);
     END CATCH
 END
 GO
 
 -- =============================================
--- SP: Verify OTP
+-- SP: Validate Password Reset Token
 -- =============================================
--- Description: Verify OTP validity, expiry, and usage
+-- Description: Verify token validity, expiry, and usage
 -- Parameters:
 --   @Email: Email address of user
---   @OtpCode: OTP code to verify
+--   @Token: Token to verify
 -- Returns: 1 if valid, 0 if invalid
 -- =============================================
-CREATE OR ALTER PROCEDURE [dbo].[spVerifyOTP]
+CREATE OR ALTER PROCEDURE [dbo].[spValidatePasswordResetToken]
     @Email NVARCHAR(256),
-    @OtpCode NVARCHAR(10)
+    @Token NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
     
     BEGIN TRY
-        -- Check if OTP exists, not used, and not expired
+        -- Check if token exists, not used, and not expired
         IF EXISTS (
-            SELECT 1 FROM [dbo].[VerificationOTPs]
+            SELECT 1 FROM [dbo].[PasswordResetTokens]
             WHERE [Email] = @Email 
-              AND [OtpCode] = @OtpCode 
+              AND [Token] = @Token 
               AND [IsUsed] = 0 
               AND [ExpiresAt] > GETUTCDATE()
         )
@@ -110,40 +106,40 @@ BEGIN
         
     END TRY
     BEGIN CATCH
-        RAISERROR('Error verifying OTP', 16, 1);
+        RAISERROR('Error validating password reset token', 16, 1);
     END CATCH
 END
 GO
 
 -- =============================================
--- SP: Reset Password
+-- SP: Reset Password with Token
 -- =============================================
--- Description: Update user password after OTP verification
+-- Description: Update user password after token verification
 -- Parameters:
 --   @Email: Email address of user
---   @OtpCode: OTP code for verification
+--   @Token: Reset token
 --   @PasswordHash: New password hash (BCrypt hashed from backend)
--- Returns: 1 if successful, 0 if failed
+-- Returns: Success message or error
 -- =============================================
-CREATE OR ALTER PROCEDURE [dbo].[spResetPassword]
+CREATE OR ALTER PROCEDURE [dbo].[spResetPasswordWithToken]
     @Email NVARCHAR(256),
-    @OtpCode NVARCHAR(10),
+    @Token NVARCHAR(MAX),
     @PasswordHash NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
     
     BEGIN TRY
-        -- Verify OTP is valid
+        -- Verify token is valid
         IF NOT EXISTS (
-            SELECT 1 FROM [dbo].[VerificationOTPs]
+            SELECT 1 FROM [dbo].[PasswordResetTokens]
             WHERE [Email] = @Email 
-              AND [OtpCode] = @OtpCode 
+              AND [Token] = @Token 
               AND [IsUsed] = 0 
               AND [ExpiresAt] > GETUTCDATE()
         )
         BEGIN
-            RAISERROR('Invalid or expired OTP', 16, 1);
+            RAISERROR('Invalid or expired password reset link', 16, 1);
             RETURN;
         END
         
@@ -153,62 +149,6 @@ BEGIN
             [UpdatedAt] = GETUTCDATE()
         WHERE [Email] = @Email;
         
-        -- Mark OTP as used
-        UPDATE [dbo].[VerificationOTPs]
-        SET [IsUsed] = 1
-        WHERE [Email] = @Email AND [OtpCode] = @OtpCode;
-        
-        -- Clean up old expired OTPs (older than 24 hours)
-        DELETE FROM [dbo].[VerificationOTPs]
-        WHERE [CreatedAt] < DATEADD(DAY, -1, GETUTCDATE());
-        
-        SELECT 1 AS IsSuccess;
-        
-    END TRY
-    BEGIN CATCH
-        RAISERROR('Error resetting password', 16, 1);
-    END CATCH
-END
-GO
-
--- =============================================
--- SP: Update Password on Password Reset
--- =============================================
--- Description: Update user password and mark OTP as used
--- Parameters:
---   @Email: Email address of user
---   @OtpCode: OTP code for verification
---   @PasswordHash: New password hash (BCrypt hashed from backend)
--- Returns: Success message or error
--- =============================================
-CREATE OR ALTER PROCEDURE [dbo].[spUpdatePasswordOnReset]
-    @Email NVARCHAR(256),
-    @OtpCode NVARCHAR(10),
-    @PasswordHash NVARCHAR(MAX)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    BEGIN TRY
-        -- Verify OTP is valid
-        IF NOT EXISTS (
-            SELECT 1 FROM [dbo].[VerificationOTPs]
-            WHERE [Email] = @Email 
-              AND [OtpCode] = @OtpCode 
-              AND [IsUsed] = 0 
-              AND [ExpiresAt] > GETUTCDATE()
-        )
-        BEGIN
-            RAISERROR('Invalid or expired OTP', 16, 1);
-            RETURN;
-        END
-        
-        -- Update user password
-        UPDATE [dbo].[Users]
-        SET [PasswordHash] = @PasswordHash,
-            [UpdatedAt] = GETUTCDATE()
-        WHERE [Email] = @Email OR [Email] = @Email;
-        
         -- Check if update was successful
         IF @@ROWCOUNT = 0
         BEGIN
@@ -216,13 +156,13 @@ BEGIN
             RETURN;
         END
         
-        -- Mark OTP as used
-        UPDATE [dbo].[VerificationOTPs]
+        -- Mark token as used
+        UPDATE [dbo].[PasswordResetTokens]
         SET [IsUsed] = 1
-        WHERE [Email] = @Email AND [OtpCode] = @OtpCode;
+        WHERE [Email] = @Email AND [Token] = @Token;
         
-        -- Clean up old expired OTPs (older than 24 hours)
-        DELETE FROM [dbo].[VerificationOTPs]
+        -- Clean up old expired tokens (older than 24 hours)
+        DELETE FROM [dbo].[PasswordResetTokens]
         WHERE [CreatedAt] < DATEADD(DAY, -1, GETUTCDATE());
         
         SELECT 'Password updated successfully' AS Message;

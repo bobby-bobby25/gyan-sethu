@@ -5,6 +5,7 @@ import api from "@/api/api";
 export interface DashboardFilters {
   startDate: Date;
   endDate: Date;
+  learningCentreId?: string;
   programId?: string;
   clusterId?: string;
 }
@@ -30,14 +31,16 @@ export interface TeacherUnavailable {
   mainTeacherName: string;
   programName: string;
   clusterName: string;
+  learningCentreName: string;
   backupTeacherName: string;
   missedDays: number;
 }
 
-export interface ClusterNeedingAttention {
+export interface LearningCentreNeedingAttention {
   teacherName: string;
   programName: string;
   clusterName: string;
+  learningCentreName: string;
   missedUpdates: number;
   attendancePercentage: number;
 }
@@ -47,6 +50,7 @@ export interface AbsentStudent {
   name: string;
   programName: string;
   clusterName: string;
+  learningCentreName: string;
   presentCount: number;
   absentCount: number;
 }
@@ -107,13 +111,14 @@ export const getBgColorClass = (type: 'attendance' | 'missed' | 'absent', value:
 
 export const useSummaryStats = (filters: DashboardFilters) => {
   return useQuery({
-    queryKey: ["dashboard-summary", filters.startDate, filters.endDate, filters.programId, filters.clusterId],
+    queryKey: ["dashboard-summary", filters.startDate, filters.endDate, filters.programId, filters.clusterId , filters.learningCentreId],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate: format(filters.startDate, "yyyy-MM-dd"),
         endDate: format(filters.endDate, "yyyy-MM-dd"),
         ...(filters.programId && { programId: filters.programId }),
         ...(filters.clusterId && { clusterId: filters.clusterId }),
+        ...(filters.learningCentreId && { learningCentreId: filters.learningCentreId }),
       });
 
       const response = await api.get<SummaryStats>(`/Dashboard/SummaryStats?${params}`);
@@ -124,13 +129,14 @@ export const useSummaryStats = (filters: DashboardFilters) => {
 
 export const useAttendanceStats = (filters: DashboardFilters) => {
   return useQuery({
-    queryKey: ["dashboard-attendance", filters.startDate, filters.endDate, filters.programId, filters.clusterId],
+    queryKey: ["dashboard-attendance", filters.startDate, filters.endDate, filters.programId, filters.clusterId, filters.learningCentreId],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate: format(filters.startDate, "yyyy-MM-dd"),
         endDate: format(filters.endDate, "yyyy-MM-dd"),
         ...(filters.programId && { programId: filters.programId }),
         ...(filters.clusterId && { clusterId: filters.clusterId }),
+        ...(filters.learningCentreId && { learningCentreId: filters.learningCentreId }),
       });
 
       const response = await api.get<AttendanceStats>(`/Dashboard/AttendanceStats?${params}`);
@@ -141,13 +147,14 @@ export const useAttendanceStats = (filters: DashboardFilters) => {
 
 export const useTeachersUnavailable = (filters: DashboardFilters) => {
   return useQuery({
-    queryKey: ["dashboard-teachers-unavailable", filters.startDate, filters.endDate, filters.programId, filters.clusterId],
+    queryKey: ["dashboard-teachers-unavailable", filters.startDate, filters.endDate, filters.programId, filters.clusterId, filters.learningCentreId],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate: format(filters.startDate, "yyyy-MM-dd"),
         endDate: format(filters.endDate, "yyyy-MM-dd"),
         ...(filters.programId && { programId: filters.programId }),
         ...(filters.clusterId && { clusterId: filters.clusterId }),
+        ...(filters.learningCentreId && { learningCentreId: filters.learningCentreId }),
       });
 
       const response = await api.get<TeacherUnavailable[]>(`/Dashboard/TeachersUnavailable?${params}`);
@@ -158,7 +165,7 @@ export const useTeachersUnavailable = (filters: DashboardFilters) => {
 
 export const useClustersNeedingAttention = (filters: DashboardFilters, poorAttendanceThreshold = 75) => {
   return useQuery({
-    queryKey: ["dashboard-clusters-attention", filters.startDate, filters.endDate, filters.programId, filters.clusterId, poorAttendanceThreshold],
+    queryKey: ["dashboard-clusters-attention", filters.startDate, filters.endDate, filters.programId, filters.clusterId, filters.learningCentreId, poorAttendanceThreshold],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate: format(filters.startDate, "yyyy-MM-dd"),
@@ -166,9 +173,10 @@ export const useClustersNeedingAttention = (filters: DashboardFilters, poorAtten
         poorAttendanceThreshold: poorAttendanceThreshold.toString(),
         ...(filters.programId && { programId: filters.programId }),
         ...(filters.clusterId && { clusterId: filters.clusterId }),
+        ...(filters.learningCentreId && { learningCentreId: filters.learningCentreId }),
       });
 
-      const response = await api.get<ClusterNeedingAttention[]>(`/Dashboard/ClustersNeedingAttention?${params}`);
+      const response = await api.get<LearningCentreNeedingAttention[]>(`/Dashboard/ClustersNeedingAttention?${params}`);
       return response.data;
     },
   });
@@ -176,7 +184,7 @@ export const useClustersNeedingAttention = (filters: DashboardFilters, poorAtten
 
 export const useMostAbsentStudents = (filters: DashboardFilters, limit = 5) => {
   return useQuery({
-    queryKey: ["dashboard-most-absent", filters.startDate, filters.endDate, filters.programId, filters.clusterId, limit],
+    queryKey: ["dashboard-most-absent", filters.startDate, filters.endDate, filters.programId, filters.clusterId, filters.learningCentreId,limit],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate: format(filters.startDate, "yyyy-MM-dd"),
@@ -184,6 +192,7 @@ export const useMostAbsentStudents = (filters: DashboardFilters, limit = 5) => {
         limit: limit.toString(),
         ...(filters.programId && { programId: filters.programId }),
         ...(filters.clusterId && { clusterId: filters.clusterId }),
+        ...(filters.learningCentreId && { learningCentreId: filters.learningCentreId }),
       });
 
       const response = await api.get<AbsentStudent[]>(`/Dashboard/MostAbsentStudents?${params}`);
@@ -192,14 +201,14 @@ export const useMostAbsentStudents = (filters: DashboardFilters, limit = 5) => {
   });
 };
 
-export interface ClusterPerformance {
-  clusterName: string;
+export interface LearningCentrePerformance {
+  learningCentreName: string;
   attendancePercentage: number;
 }
 
-export const useClusterPerformance = (filters: DashboardFilters, limit = 5) => {
+export const useLearningCentrePerformance = (filters: DashboardFilters, limit = 5) => {
   return useQuery({
-    queryKey: ["dashboard-cluster-performance", filters.startDate, filters.endDate, filters.programId, filters.clusterId, limit],
+    queryKey: ["dashboard-cluster-performance", filters.startDate, filters.endDate, filters.programId, filters.clusterId, filters.learningCentreId, limit],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate: format(filters.startDate, "yyyy-MM-dd"),
@@ -207,9 +216,10 @@ export const useClusterPerformance = (filters: DashboardFilters, limit = 5) => {
         limit: limit.toString(),
         ...(filters.programId && { programId: filters.programId }),
         ...(filters.clusterId && { clusterId: filters.clusterId }),
+        ...(filters.learningCentreId && { learningCentreId: filters.learningCentreId }),
       });
 
-      const response = await api.get<{ bestClusters: ClusterPerformance[]; worstClusters: ClusterPerformance[] }>(`/Dashboard/ClusterPerformance?${params}`);
+      const response = await api.get<{ bestLearningCentres: LearningCentrePerformance[]; worstLearningCentres: LearningCentrePerformance[] }>(`/Dashboard/LearningCentrePerformance?${params}`);
       return response.data;
     },
   });

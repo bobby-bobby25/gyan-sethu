@@ -71,6 +71,8 @@ export interface StudentWithDetails extends Student {
 
 export interface StudentFilters {
   search?: string;
+  academicYearId?: number;
+  learningCentreId?: number;
   clusterId?: string;
   programId?: string;
   isActive?: boolean;
@@ -86,6 +88,8 @@ export function useStudents(filters?: StudentFilters) {
       try {
         const params = new URLSearchParams();
         if (filters?.search) params.append("search", filters.search);
+        if (filters?.academicYearId) params.append("academicYearId", String(filters.academicYearId));
+        if (filters?.learningCentreId) params.append("learningCentreId", String(filters.learningCentreId));
         if (filters?.clusterId) params.append("clusterId", filters.clusterId);
         if (filters?.programId) params.append("programId", filters.programId);
         if (filters?.isActive !== undefined) params.append("isActive", String(filters.isActive));

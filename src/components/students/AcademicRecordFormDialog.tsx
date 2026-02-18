@@ -96,40 +96,42 @@ export function AcademicRecordFormDialog({
   const { data: learningCentres } = useLearningCentres(selectedClusterId ? parseInt(selectedClusterId) : undefined);
 
   useEffect(() => {
-    if (record) {
-      form.reset({
-        academic_year_id: record.academic_year_id || "",
-        cluster_id: record.cluster_id || "",
-        learning_centre_id: (record as any).learning_centre_id || "",
-        program_id: record.program_id || "",
-        school_type_id: (record as any).school_type_id ? String((record as any).school_type_id) : "",
-        medium_id: (record as any).medium_id ? String((record as any).medium_id) : "",
-        class_grade: record.class_grade || "",
-        school_name: record.school_name || "",
-        attendance_percentage: record.attendance_percentage,
-        result_percentage: record.result_percentage,
-        yearly_fees: record.yearly_fees,
-        remarks: record.remarks || "",
-      });
-    } else {
-      // Default to current academic year
-      const currentYear = academicYears?.find(y => y.is_current);
-      form.reset({
-        academic_year_id: currentYear?.id || "",
-        cluster_id: "",
-        learning_centre_id: "",
-        program_id: "",
-        school_type_id: "",
-        medium_id: "",
-        class_grade: "",
-        school_name: "",
-        attendance_percentage: null,
-        result_percentage: null,
-        yearly_fees: null,
-        remarks: "",
-      });
+    if (open) {
+      if (record) {
+        form.reset({
+          academic_year_id: record.academic_year_id || "",
+          cluster_id: record.cluster_id || "",
+          learning_centre_id: (record as any).learning_centre_id || "",
+          program_id: record.program_id || "",
+          school_type_id: (record as any).school_type_id ? String((record as any).school_type_id) : "",
+          medium_id: (record as any).medium_id ? String((record as any).medium_id) : "",
+          class_grade: record.class_grade || "",
+          school_name: record.school_name || "",
+          attendance_percentage: record.attendance_percentage,
+          result_percentage: record.result_percentage,
+          yearly_fees: record.yearly_fees,
+          remarks: record.remarks || "",
+        });
+      } else {
+        // Default to current academic year
+        const currentYear = academicYears?.find(y => y.is_current);
+        form.reset({
+          academic_year_id: currentYear?.id || "",
+          cluster_id: "",
+          learning_centre_id: "",
+          program_id: "",
+          school_type_id: "",
+          medium_id: "",
+          class_grade: "",
+          school_name: "",
+          attendance_percentage: null,
+          result_percentage: null,
+          yearly_fees: null,
+          remarks: "",
+        });
+      }
     }
-  }, [record, academicYears, form]);
+  }, [record, academicYears, form, open]);
 
   const onSubmit = async (data: AcademicRecordFormData) => {
     const payload = {

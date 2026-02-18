@@ -10,11 +10,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle, Download, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { ClusterNeedingAttention, getColorClass, getBgColorClass } from "@/hooks/useDashboardData";
+import { LearningCentreNeedingAttention, getColorClass, getBgColorClass } from "@/hooks/useDashboardData";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClustersNeedingAttentionTableProps {
-  data: ClusterNeedingAttention[] | undefined;
+  data: LearningCentreNeedingAttention[] | undefined;
   isLoading: boolean;
   onExport: () => void;
 }

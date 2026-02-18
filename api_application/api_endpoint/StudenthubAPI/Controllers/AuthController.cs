@@ -10,11 +10,12 @@ using System.Net;
 using IOFile = System.IO.File;
 using Microsoft.Data.SqlClient;
 using StudenthubAPI.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace StudenthubAPI.Controllers
 {
     /// <summary>
-    /// Authentication endpoints for password reset and OTP management
+    /// Authentication endpoints for password reset and token management
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -28,12 +29,12 @@ namespace StudenthubAPI.Controllers
         }
 
         /// <summary>
-        /// Generate and send OTP for password reset
-        /// POST: /api/auth/send-reset-otp
+        /// Send password reset link via email
+        /// POST: /api/auth/send-reset-link
         /// </summary>
-        [HttpPost("send-reset-otp")]
+        [HttpPost("send-reset-link")]
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-        public async Task<IActionResult> SendResetOtp([FromBody] SendResetOtpRequest request)
+        public async Task<IActionResult> SendResetLink([FromBody] SendResetLinkRequest request)
         {
             try
             {
@@ -59,53 +60,59 @@ namespace StudenthubAPI.Controllers
                     return BadRequest(new { message = "Unable to process request. Please check the email address." });
                 }
 
-                var random = new Random();
-                var otp = random.Next(100000, 999999).ToString();
-                var expiresAt = DateTime.UtcNow.AddMinutes(15);
+                var _settings = _dataContext.emailSettings;
 
-                var existingOtps = await _dataContext.VerificationOTPs
-                    .Where(o => o.Email == request.Email)
+                // Generate UUID token
+                var token = Guid.NewGuid().ToString();
+                var expiresAt = DateTime.UtcNow.AddMinutes(_settings.OtpExpiryMinutes);
+
+                var existingTokens = await _dataContext.PasswordResetTokens
+                    .Where(t => t.Email == request.Email)
                     .ToListAsync();
 
-                foreach (var existingOtp in existingOtps)
+                foreach (var existingToken in existingTokens)
                 {
-                    existingOtp.IsUsed = true;
+                    existingToken.IsUsed = true;
                 }
 
-                var otpRecord = new VerificationOTP
+                var resetToken = new PasswordResetToken
                 {
                     Email = request.Email,
-                    OtpCode = otp,
+                    Token = token,
                     ExpiresAt = expiresAt,
                     IsUsed = false,
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _dataContext.VerificationOTPs.Add(otpRecord);
+                _dataContext.PasswordResetTokens.Add(resetToken);
                 await _dataContext.SaveChangesAsync();
 
                 var userName = !string.IsNullOrWhiteSpace(user?.FullName)
                     ? user.FullName
                     : user?.Email ?? "User";
 
+
+                // Generate reset link
+                var resetLink = $"{_dataContext.jwtAudience}/reset-password?token={token}&email={Uri.EscapeDataString(request.Email)}";
+                var expiryMinutes = _settings.OtpExpiryMinutes.ToString();
+
                 var placeholders = new Dictionary<string, string>
                 {
                     { "UserName", userName },
-                    { "OTP", otp },
-                    { "ExpiryMinutes", "15" },
+                    { "ResetLink", resetLink },
+                    { "ExpiryMinutes", expiryMinutes },
                     { "Year", DateTime.Now.Year.ToString() }
                 };
 
-                var subject = "Password Reset OTP - GyanBridge";
-                var template = "OTPTemplate";
-
+                var subject = "Reset Your Password - GyanBridge";
+                var template = "ResetPasswordTemplate";
 
                 await SendEmailAsync(request.Email, subject, template, placeholders);
 
                 return Ok(new
                 {
                     success = true,
-                    message = "OTP has been sent to your email address",
+                    message = "Password reset link has been sent to your email address",
                     email = request.Email
                 });
             }
@@ -115,61 +122,64 @@ namespace StudenthubAPI.Controllers
             }
         }
 
-        [HttpPost("verify-reset-otp")]
-        public async Task<IActionResult> VerifyResetOtp([FromBody] VerifyOTPRequest request)
+        /// <summary>
+        /// Validate password reset token
+        /// POST: /api/auth/validate-reset-token
+        /// </summary>
+        [HttpPost("validate-reset-token")]
+        public async Task<IActionResult> ValidateResetToken([FromBody] ValidateResetTokenRequest request)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(request?.Email) || string.IsNullOrWhiteSpace(request?.Otp))
+                if (string.IsNullOrWhiteSpace(request?.Email) || string.IsNullOrWhiteSpace(request?.Token))
                 {
-                    return BadRequest(new { message = "Email and OTP are required" });
+                    return BadRequest(new { message = "Email and token are required" });
                 }
 
-                if (!System.Text.RegularExpressions.Regex.IsMatch(request.Otp, @"^\d{6}$"))
+                var resetToken = await _dataContext.PasswordResetTokens
+                    .FirstOrDefaultAsync(t => t.Email == request.Email && t.Token == request.Token);
+
+                if (resetToken == null)
                 {
-                    return BadRequest(new { message = "OTP must be 6 digits" });
+                    return BadRequest(new { message = "Invalid reset link" });
                 }
 
-                var otpRecord = await _dataContext.VerificationOTPs
-                    .FirstOrDefaultAsync(o => o.Email == request.Email && o.OtpCode == request.Otp);
-
-                if (otpRecord == null)
+                if (DateTime.UtcNow > resetToken.ExpiresAt)
                 {
-                    return BadRequest(new { message = "Invalid or expired OTP" });
+                    return BadRequest(new { message = "Password reset link has expired" });
                 }
 
-                if (DateTime.UtcNow > otpRecord.ExpiresAt)
+                if (resetToken.IsUsed)
                 {
-                    return BadRequest(new { message = "OTP has expired" });
-                }
-
-                if (otpRecord.IsUsed)
-                {
-                    return BadRequest(new { message = "OTP has already been used" });
+                    return BadRequest(new { message = "Password reset link has already been used" });
                 }
 
                 return Ok(new
                 {
                     success = true,
-                    message = "OTP verified successfully"
+                    message = "Reset token is valid"
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while verifying OTP" });
+                return StatusCode(500, new { message = "An error occurred while validating the reset link" });
             }
         }
 
+        /// <summary>
+        /// Reset password with valid token
+        /// POST: /api/auth/reset-password
+        /// </summary>
         [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordWithTokenRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request?.Email) || 
-                    string.IsNullOrWhiteSpace(request?.Otp) ||
+                    string.IsNullOrWhiteSpace(request?.Token) ||
                     string.IsNullOrWhiteSpace(request?.Password))
                 {
-                    return BadRequest(new { message = "Email, OTP, and password are required" });
+                    return BadRequest(new { message = "Email, token, and password are required" });
                 }
 
                 var emailValidator = new EmailAddressAttribute();
@@ -178,32 +188,27 @@ namespace StudenthubAPI.Controllers
                     return BadRequest(new { message = "Invalid email format" });
                 }
 
-                if (!System.Text.RegularExpressions.Regex.IsMatch(request.Otp, @"^\d{6}$"))
-                {
-                    return BadRequest(new { message = "OTP must be 6 digits" });
-                }
-
                 if (request.Password.Length < 8)
                 {
                     return BadRequest(new { message = "Password must be at least 8 characters" });
                 }
 
-                var otpRecord = await _dataContext.VerificationOTPs
-                    .FirstOrDefaultAsync(o => o.Email == request.Email && o.OtpCode == request.Otp);
+                var resetToken = await _dataContext.PasswordResetTokens
+                    .FirstOrDefaultAsync(t => t.Email == request.Email && t.Token == request.Token);
 
-                if (otpRecord == null)
+                if (resetToken == null)
                 {
-                    return BadRequest(new { message = "Invalid OTP" });
+                    return BadRequest(new { message = "Invalid reset link" });
                 }
 
-                if (DateTime.UtcNow > otpRecord.ExpiresAt)
+                if (DateTime.UtcNow > resetToken.ExpiresAt)
                 {
-                    return BadRequest(new { message = "OTP has expired" });
+                    return BadRequest(new { message = "Password reset link has expired" });
                 }
 
-                if (otpRecord.IsUsed)
+                if (resetToken.IsUsed)
                 {
-                    return BadRequest(new { message = "OTP has already been used" });
+                    return BadRequest(new { message = "Password reset link has already been used" });
                 }
 
                 // Hash password with BCrypt
@@ -211,9 +216,9 @@ namespace StudenthubAPI.Controllers
 
                 // Call stored procedure to update password
                 await _dataContext.Database.ExecuteSqlRawAsync(
-                    "EXEC spUpdatePasswordOnReset @Email, @OtpCode, @PasswordHash",
+                    "EXEC spResetPasswordWithToken @Email, @Token, @PasswordHash",
                     new SqlParameter("@Email", request.Email),
-                    new SqlParameter("@OtpCode", request.Otp),
+                    new SqlParameter("@Token", request.Token),
                     new SqlParameter("@PasswordHash", passwordHash)
                 );
 
@@ -258,31 +263,6 @@ namespace StudenthubAPI.Controllers
             await client.SendMailAsync(message);
         }
 
-        [HttpPost]
-        public async Task SendResetPasswordEmailAsync(
-            string email,
-            string resetLink,
-            string expiryMinutes = "30")
-        {
-            try
-            {
-                var placeholders = new Dictionary<string, string>
-                {
-                    { "UserEmail", email },
-                    { "ResetLink", resetLink },
-                    { "ExpiryMinutes", expiryMinutes },
-                    { "Year", DateTime.Now.Year.ToString() }
-                };
-
-                var subject = "Reset Your Password - GyanBridge";
-                await SendEmailAsync(email, subject, "ResetPasswordTemplate", placeholders);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending reset password email: {ex.Message}");
-            }
-        }
-
         private async Task<string> LoadTemplateAsync(string templateName, Dictionary<string, string> placeholders)
         {
             try
@@ -307,7 +287,7 @@ namespace StudenthubAPI.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading template: {ex.Message}");
-                return $"<p>Your OTP is: <strong>{placeholders["OTP"]}</strong></p><p>This OTP expires in {placeholders["ExpiryMinutes"]} minutes.</p>";
+                return $"<p>Click the link below to reset your password:</p><p><a href='{placeholders["ResetLink"]}'>Reset Password</a></p><p>This link expires in {placeholders["ExpiryMinutes"]} minutes.</p>";
             }
         }
     }

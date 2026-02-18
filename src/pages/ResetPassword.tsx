@@ -14,17 +14,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { GraduationCap, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { GraduationCap, Loader2, CheckCircle, AlertCircle, ArrowLeft, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import api from "@/api/api";
 
-// Password validation regex
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[a-zA-Z\d@$!%*?&]{8,}$/;
+const emailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
 
 const resetPasswordSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must contain only numbers"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
@@ -37,106 +36,114 @@ const resetPasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
+type EmailFormData = z.infer<typeof emailSchema>;
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 export const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const emailParam = searchParams.get("email");
+  const token = searchParams.get("token");
+  const email = searchParams.get("email");
 
-  const [step, setStep] = useState<"email" | "otp-password">(emailParam ? "otp-password" : "email");
-  const [email, setEmail] = useState(emailParam || "");
-  const [resendCountdown, setResendCountdown] = useState(0);
-  const [resendCount, setResendCount] = useState(0);
-  const [isResending, setIsResending] = useState(false);
+  const [step, setStep] = useState<"email" | "validating" | "reset" | "expired">(token ? "validating" : "email");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [emailSubmitted, setEmailSubmitted] = useState(!!emailParam);
-  const MAX_RESEND_ATTEMPTS = 3;
 
-  const form = useForm<ResetPasswordFormData>({
+  const emailForm = useForm<EmailFormData>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const resetForm = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      email: emailParam || "",
-      otp: "",
       password: "",
       confirmPassword: "",
     },
   });
 
-  // Handle countdown timer
+  // Validate token on component mount if present
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (resendCountdown > 0) {
-      interval = setInterval(() => {
-        setResendCountdown((prev) => prev - 1);
-      }, 1000);
+    if (token && email) {
+      validateToken();
     }
-    return () => clearInterval(interval);
-  }, [resendCountdown]);
+    if (email) {
+    emailForm.setValue("email", email);
+  }
+  }, [token, email]);
 
-  const handleSendOTP = async () => {
-    if (!email) {
-      toast.error("Email is required");
-      return;
-    }
-
-    // Check if resend limit is reached
-    if (resendCount >= MAX_RESEND_ATTEMPTS) {
-      toast.error("Maximum OTP resend attempts (3) reached. Please contact support.");
-      return;
-    }
-
-    setIsResending(true);
+  const validateToken = async () => {
     try {
-      await api.post("/auth/send-reset-otp", { email });
-
-      toast.success("OTP sent to your email");
-      setStep("otp-password");
-      setEmailSubmitted(true);
-      form.setValue("email", email);
-      setResendCount((prev) => prev + 1);
-      setResendCountdown(30);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to send OTP. Please try again.");
-      console.error("Send OTP error:", error);
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-    await handleSendOTP();
-  };
-
-  const onSubmit = async (data: ResetPasswordFormData) => {
-    setIsSubmitting(true);
-    try {
-      await api.post("/auth/reset-password", {
-        email: data.email,
-        otp: data.otp,
-        password: data.password,
+      const response = await api.post("/auth/validate-reset-token", {
+        email: decodeURIComponent(email!),
+        token,
       });
 
-      toast.success("Password reset successfully! Redirecting to login...");
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      if (response.data.success) {
+        setStep("reset");
+      }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to reset password");
-      console.error("Reset password error:", error);
+      const errorMessage = error?.response?.data?.message || "Invalid or expired reset link";
+      toast.error(errorMessage);
+      setStep("expired");
+    }
+  };
+
+  const onEmailSubmit = async (data: EmailFormData) => {
+    setIsSubmitting(true);
+    try {
+      const response = await api.post("/auth/send-reset-link", {
+        email: data.email,
+      });
+
+      if (response.data.success) {
+        toast.success("Reset link sent! Please check your email.");
+        emailForm.reset();
+        // Could show a success message or navigate to login
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Failed to send reset link";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const password = form.watch("password");
+  const onPasswordSubmit = async (data: ResetPasswordFormData) => {
+    if (!token || !email) {
+      toast.error("Invalid reset link");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await api.post("/auth/reset-password", {
+        email: decodeURIComponent(email),
+        token,
+        password: data.password,
+      });
+
+      if (response.data.success) {
+        toast.success("Password reset successfully! Redirecting to login...");
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Failed to reset password";
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const password = resetForm.watch("password");
 
   // Password validation indicators
   const passwordChecks = {
@@ -161,39 +168,44 @@ export const ResetPassword = () => {
               </div>
             </div>
             <CardTitle className="text-2xl">Reset Password</CardTitle>
-            <CardDescription>Enter your email to receive an OTP</CardDescription>
+            <CardDescription>Enter your email to receive a reset link</CardDescription>
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Email Address
-                </label>
-                <Input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-xl h-11"
+            <Form {...emailForm}>
+              <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+                <FormField
+                  control={emailForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            {...field}
+                            type="email"
+                            placeholder="your@email.com"
+                            className="pl-10 rounded-xl h-11"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <Button
-                type="submit"
-                className="w-full rounded-xl h-11"
-                disabled={isResending || !email}
-              >
-                {isResending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sending OTP...
-                  </>
-                ) : (
-                  "Send OTP"
-                )}
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  className="w-full rounded-xl h-11 mt-6"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSubmitting ? "Sending Link..." : "Send Reset Link"}
+                </Button>
+              </form>
+            </Form>
 
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-center text-sm text-muted-foreground">
@@ -209,7 +221,74 @@ export const ResetPassword = () => {
     );
   }
 
-  // Step 2: OTP and Password Reset
+  // Step 2: Validating Token
+  if (step === "validating") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/5 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">Validating Link</CardTitle>
+            <CardDescription>Please wait...</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 3: Expired/Invalid Link
+  if (step === "expired") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/5 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-lg bg-destructive/20 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-destructive" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl text-destructive">Link Expired</CardTitle>
+            <CardDescription>Your password reset link is no longer valid</CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Password reset links expire after a set time for security reasons. Please request a new reset link.
+            </p>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => navigate("/login")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Login
+              </Button>
+              <Button
+                className="flex-1 rounded-xl"
+                onClick={() => {
+                  setStep("email");
+                  resetForm.reset();
+                }}
+              >
+                Request New Link
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 4: Reset Password Form
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/5 p-4">
       <Card className="w-full max-w-md">
@@ -220,80 +299,26 @@ export const ResetPassword = () => {
             </div>
           </div>
           <CardTitle className="text-2xl">Reset Password</CardTitle>
-          <CardDescription>Enter your OTP and create a new password</CardDescription>
+          <CardDescription>Create a new password for your account</CardDescription>
         </CardHeader>
 
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Email Field (Readonly) */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="your@email.com"
-                        disabled
-                        className="bg-muted"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* OTP Field */}
-              <FormField
-                control={form.control}
-                name="otp"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>One-Time Password</FormLabel>
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        disabled={isResending || resendCountdown > 0 || resendCount >= MAX_RESEND_ATTEMPTS}
-                        onClick={handleSendOTP}
-                        className="text-xs h-auto p-0"
-                      >
-                        {isResending ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Sending...
-                          </>
-                        ) : resendCount >= MAX_RESEND_ATTEMPTS ? (
-                          <span className="text-destructive">Resend limit reached</span>
-                        ) : resendCountdown > 0 ? (
-                          `Resend in ${resendCountdown}s`
-                        ) : (
-                          `Send OTP (${resendCount}/${MAX_RESEND_ATTEMPTS})`
-                        )}
-                      </Button>
-                    </div>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="000000"
-                        maxLength={6}
-                        className="tracking-widest text-center text-lg font-mono"
-                        inputMode="numeric"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <Form {...resetForm}>
+            <form onSubmit={resetForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+              {/* Email Display Field */}
+              <div className="space-y-2">
+                <FormLabel>Email Address</FormLabel>
+                <Input
+                  type="email"
+                  value={decodeURIComponent(email || "")}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
 
               {/* Password Field */}
               <FormField
-                control={form.control}
+                control={resetForm.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
@@ -361,7 +386,7 @@ export const ResetPassword = () => {
 
               {/* Confirm Password Field */}
               <FormField
-                control={form.control}
+                control={resetForm.control}
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
@@ -392,14 +417,14 @@ export const ResetPassword = () => {
               <Button
                 type="submit"
                 disabled={!isPasswordValid || isSubmitting}
-                className="w-full"
+                className="w-full rounded-xl h-11 mt-6"
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? "Resetting Password..." : "Reset Password"}
               </Button>
 
               {/* Back to Login Link */}
-              <div className="text-center">
+              <div className="text-center pt-2">
                 <Link to="/login" className="text-sm text-primary hover:underline">
                   Back to Login
                 </Link>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -49,11 +49,9 @@ import {
   useCasteCategories, 
   useIdProofTypes,
   useAmbitions,
-  useHobbies,
-  useCities,
-  useStates,
+  useHobbies
 } from "@/hooks/useStudents";
-import { useSearchStudentsByCode } from "@/hooks/useMasterData";
+import { useCities, useSearchStudentsByCode } from "@/hooks/useMasterData";
 import type { Student } from "@/hooks/useStudents";
 import { useUploadDocument, useDocumentsByReference, useDeleteDocument, useDocumentUrl } from "@/hooks/useDocuments";
 import { Loader2, Check, ChevronsUpDown, X, Camera, User, FileText, Download, Trash2, Plus } from "lucide-react";
@@ -102,10 +100,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
   const { data: ambitions } = useAmbitions();
   const { data: hobbies } = useHobbies();
   const { data: cities } = useCities();
-  const { data: states } = useStates();
 
-  const [cityOpen, setCityOpen] = useState(false);
-  const [stateOpen, setStateOpen] = useState(false);
   const [hobbiesOpen, setHobbiesOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -224,6 +219,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
   };
 
   const onSubmit = async (data: StudentFormData) => {
+    console.log("Form data to submit:", data);
     const payload = {
       name: data.name,
       gender: data.gender || null,
@@ -237,7 +233,7 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
       ambition: data.ambition || null,
       hobbies: data.hobbies && data.hobbies.length > 0 ? data.hobbies : null,
       notes: data.notes || null,
-      id_proof_type_id: data.id_proof_type_id || null,
+      id_proof_type_id: data.id_proof_type_id =="0"? null:  data.id_proof_type_id,      
       id_proof_number: data.id_number || null,
       sibling_student_code: data.sibling_student_code || null,
     };
@@ -324,9 +320,18 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
     }
   };
 
-  const uniqueCities = cities?.filter((c, i, arr) => 
-    arr.findIndex(x => x.name === c.name) === i
-  ) || [];
+  const states = useMemo(() => {
+    if (!cities) return [];
+    const uniqueStates = [...new Set(cities.map((c) => c.state))];
+    return uniqueStates.sort();
+  }, [cities]);
+
+  const selectedState = form.watch("state");
+
+  const filteredCities = useMemo(() => {
+    if (!cities || !selectedState) return cities || [];
+    return (cities as any[]).filter((c) => c.state === selectedState);
+  }, [cities, selectedState]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -511,8 +516,8 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
                 <h3 className="text-sm font-bold text-foreground tracking-wide uppercase">Contact & Location</h3>
               </div>
               <div className="bg-primary/5 p-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="col-span-2">
                     <FormField
                       control={form.control}
                       name="address"
@@ -530,64 +535,30 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
 
                   <FormField
                     control={form.control}
-                    name="city"
+                    name="state"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>City</FormLabel>
-                        <Popover open={cityOpen} onOpenChange={setCityOpen}>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                role="combobox"
-                                className={cn(
-                                  "justify-between font-normal h-9",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value || "Select city"}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[200px] p-0">
-                            <Command>
-                              <CommandInput placeholder="Search city..." />
-                              <CommandList>
-                                <CommandEmpty>
-                                  <Button
-                                    variant="ghost"
-                                    className="w-full"
-                                    onClick={() => setCityOpen(false)}
-                                  >
-                                    Use typed value
-                                  </Button>
-                                </CommandEmpty>
-                                <CommandGroup>
-                                  {uniqueCities.map((city) => (
-                                    <CommandItem
-                                      key={city.id}
-                                      value={city.name}
-                                      onSelect={() => {
-                                        form.setValue("city", city.name);
-                                        form.setValue("state", city.state);
-                                        setCityOpen(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          field.value === city.name ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      {city.name}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                      <FormItem>
+                        <FormLabel>State</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue("city", "");
+                          }}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {states.map((state: any) => (
+                              <SelectItem key={state} value={state}>
+                                {state}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -595,55 +566,24 @@ export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDi
 
                   <FormField
                     control={form.control}
-                    name="state"
+                    name="city"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>State</FormLabel>
-                        <Popover open={stateOpen} onOpenChange={setStateOpen}>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                role="combobox"
-                                className={cn(
-                                  "justify-between font-normal h-9",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value || "Select state"}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[200px] p-0">
-                            <Command>
-                              <CommandInput placeholder="Search state..." />
-                              <CommandList>
-                                <CommandEmpty>No state found.</CommandEmpty>
-                                <CommandGroup>
-                                  {states?.map((state) => (
-                                    <CommandItem
-                                      key={state}
-                                      value={state}
-                                      onSelect={() => {
-                                        form.setValue("state", state);
-                                        setStateOpen(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          field.value === state ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      {state}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {filteredCities.map((city: any) => (
+                              <SelectItem key={city.id} value={city.name}>
+                                {city.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

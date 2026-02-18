@@ -8,7 +8,7 @@ import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { ColorLegend } from "@/components/dashboard/ColorLegend";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import { AttendanceSection } from "@/components/dashboard/AttendanceSection";
-import { ClusterPerformanceCharts } from "@/components/dashboard/ClusterPerformanceCharts";
+import { LearningCentrePerformanceCharts } from "@/components/dashboard/LearningCentrePerformanceCharts";
 import { TeachersUnavailableTable } from "@/components/dashboard/TeachersUnavailableTable";
 import { ClustersNeedingAttentionTable } from "@/components/dashboard/ClustersNeedingAttentionTable";
 import { MostAbsentStudentsTable } from "@/components/dashboard/MostAbsentStudentsTable";
@@ -18,11 +18,12 @@ import {
   useTeachersUnavailable,
   useClustersNeedingAttention,
   useMostAbsentStudents,
-  useClusterPerformance,
+  useLearningCentrePerformance,
   usePrograms,
   useClusters,
   DashboardFilters as DashboardFiltersType,
 } from "@/hooks/useDashboardData";
+import { useLearningCentres } from "@/hooks/useLearningCentres";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -32,10 +33,12 @@ const Dashboard = () => {
   const [dateRange, setDateRange] = useState({ from: yesterday, to: yesterday });
   const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>();
   const [selectedClusterId, setSelectedClusterId] = useState<string | undefined>();
+  const [selectedLearningCentreId, setSelectedLearningCentreId] = useState<string | undefined>();
 
   // Lookup data
   const { data: programs } = usePrograms();
   const { data: clusters } = useClusters();
+  const { data: learningCentres } = useLearningCentres(parseInt(selectedClusterId || "0"));
 
   // Build filters object
   const filters: DashboardFiltersType = useMemo(() => ({
@@ -43,12 +46,13 @@ const Dashboard = () => {
     endDate: dateRange.to,
     programId: selectedProgramId,
     clusterId: selectedClusterId,
-  }), [dateRange, selectedProgramId, selectedClusterId]);
+    learningCentreId: selectedLearningCentreId,
+  }), [dateRange, selectedProgramId, selectedClusterId, selectedLearningCentreId]);
 
   // Dashboard data hooks
   const { data: summaryStats, isLoading: summaryLoading } = useSummaryStats(filters);
   const { data: attendanceStats, isLoading: attendanceLoading } = useAttendanceStats(filters);
-  const { data: clusterPerformance, isLoading: clusterPerfLoading } = useClusterPerformance(filters);
+  const { data: LearningCentrePerformance, isLoading: clusterPerfLoading } = useLearningCentrePerformance(filters);
   const { data: teachersUnavailable, isLoading: teachersLoading } = useTeachersUnavailable(filters);
   const { data: clustersNeedingAttention, isLoading: clustersLoading } = useClustersNeedingAttention(filters);
   const { data: mostAbsentStudents, isLoading: absentsLoading } = useMostAbsentStudents(filters);
@@ -86,6 +90,7 @@ const Dashboard = () => {
           "Main Teacher": t.mainTeacherName,
           Program: t.programName,
           Cluster: t.clusterName,
+          LearningCentre: t.learningCentreName,
           "Backup Teacher": t.backupTeacherName,
           "Missed Days": t.missedDays,
         })),
@@ -101,6 +106,7 @@ const Dashboard = () => {
           Teacher: c.teacherName,
           Program: c.programName,
           Cluster: c.clusterName,
+          LearningCentre: c.learningCentreName,
           "Missed Updates": c.missedUpdates,
           "Attendance %": c.attendancePercentage,
         })),
@@ -116,6 +122,7 @@ const Dashboard = () => {
           Student: s.name,
           Program: s.programName,
           Cluster: s.clusterName,
+          LearningCentre: s.learningCentreName,
           Present: s.presentCount,
           Absent: s.absentCount,
         })),
@@ -155,10 +162,13 @@ const Dashboard = () => {
                 onDateRangeChange={setDateRange}
                 programs={programs || []}
                 clusters={clusters || []}
+                learningCentres={learningCentres || []}
                 selectedProgramId={selectedProgramId}
                 selectedClusterId={selectedClusterId}
+                selectedLearningCentreId={selectedLearningCentreId}
                 onProgramChange={setSelectedProgramId}
                 onClusterChange={setSelectedClusterId}
+                onLearningCentreChange={setSelectedLearningCentreId}
               />
               <ColorLegend />
             </div>
@@ -182,9 +192,9 @@ const Dashboard = () => {
             </div>
 
             {/* Cluster Performance Charts - side by side */}
-            <ClusterPerformanceCharts
-              bestClusters={clusterPerformance?.bestClusters}
-              worstClusters={clusterPerformance?.worstClusters}
+            <LearningCentrePerformanceCharts
+              bestLearningCentres={LearningCentrePerformance?.bestLearningCentres}
+              worstLearningCentres={LearningCentrePerformance?.worstLearningCentres}
               isLoading={clusterPerfLoading}
             />
 
